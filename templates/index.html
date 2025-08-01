@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Peladeiros - Home{% endblock %}
+
+{% block content %}
+
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Reserve seu espaço para esporte e lazer</h1>
+                <p>Campos de futebol society, areia e churrasqueiras disponíveis para aluguel com toda comodidade e segurança.</p>
+                <div class="hero-buttons">
+                    <a href="{% url 'reservas' %}" class="btn">Reservar Agora</a>
+                    <a href="#features" class="btn">Conheça Nossos Serviços</a>
+                </div>
+            </div>
+        </div>
+        <section class="carousel-section">
+            <div class="container">
+                <div class="dual-carousel-container">
+                    <div class="carousel-container">
+                        <div class="carousel-slide active">
+                            <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1771&q=80" alt="Campo Society">
+                            <div class="carousel-caption">Campo Society</div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="https://images.unsplash.com/photo-1518604666860-9ed391f76460?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1771&q=80" alt="Campo de Areia">
+                            <div class="carousel-caption">Campo de Areia</div>
+                        </div>
+                        <button class="carousel-btn prev-btn">&#10094;</button>
+                        <button class="carousel-btn next-btn">&#10095;</button>
+                    </div>
+        
+                    <div class="carousel-container">
+                        <div class="carousel-slide active">
+                            <img src="https://images.unsplash.com/photo-1600891964092-4316c288032e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1771&q=80" alt="Churrasqueira Premium">
+                            <div class="carousel-caption">Espaço com Churrasqueira</div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="https://images.unsplash.com/photo-1575361204480-aadea25e6e68?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1771&q=80" alt="Outro Espaço">
+                            <div class="carousel-caption">Outro Espaço</div>
+                        </div>
+                        <button class="carousel-btn prev-btn">&#10094;</button>
+                        <button class="carousel-btn next-btn">&#10095;</button>
+                    </div>
+                </div>
+                <div class="carousel-dots-container">
+                    <div class="carousel-dots" data-carousel="1">
+                        <span class="dot active"></span>
+                        <span class="dot"></span>
+                    </div>
+                    <div class="carousel-dots" data-carousel="2">
+                        <span class="dot active"></span>
+                        <span class="dot"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title">Nossos Espaços</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-img">
+                        <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1705&q=80" alt="Campo Society">
+                    </div>
+                    <div class="feature-content">
+                        <h3>Campo Society</h3>
+                        <p>Campo de grama sintética com medidas oficiais, iluminação profissional e vestiários completos.</p>
+                        <div class="price">R$ 250<span> / hora</span></div>
+                        <a href="{% url 'reservas' %}" class="btn">Reservar Agora</a>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-img">
+                        <img src="https://images.unsplash.com/photo-1518604666860-9ed391f76460?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80" alt="Campo de Areia">
+                    </div>
+                    <div class="feature-content">
+                        <h3>Campo de Areia</h3>
+                        <p>Campo de futevôlei e futebol de areia com dimensões regulamentares e iluminação noturna.</p>
+                        <div class="price">R$ 180<span> / hora</span></div>
+                        <a href="{% url 'reservas' %}" class="btn">Reservar Agora</a>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-img">
+                        <img src="https://images.unsplash.com/photo-1600891964092-4316c288032e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80" alt="Churrasqueira">
+                    </div>
+                    <div class="feature-content">
+                        <h3>Churrasqueira Premium</h3>
+                        <p>Área de churrasco completa com churrasqueira, mesas, cadeiras e espaço para até 30 pessoas.</p>
+                        <div class="price">R$ 320<span> / período</span></div>
+                        <a href="{% url 'reservas' %}" class="btn">Reservar Agora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+{% endblock %}

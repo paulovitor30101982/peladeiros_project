@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reservas - Peladeiros{% endblock %}
+
+{% block content %}
+<section class="reservation">
+    <div class="container">
+        <h2 class="section-title">Faça sua Reserva</h2>
+        <div class="reservation-grid">
+            
+            <div class="items-column">
+
+                <div class="item-card">
+                    <div class="item-main-content">
+                        <div class="item-img">
+                            <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1705&q=80" alt="Campo Society">
+                        </div>
+                        <div class="item-content">
+                            <h3>Campo Society</h3>
+                            <p>Campo de grama sintética com medidas oficiais, iluminação profissional e vestiários completos.</p>
+                            <div class="price">R$ 250<span> / hora</span></div>
+                        </div>
+                    </div>
+                    <div class="date-picker">
+                        <h4 class="date-picker-title">Escolha uma Data e Horário</h4>
+                        <div class="calendar-header">
+                            <button class="prev-month-btn"><i class="fas fa-chevron-left"></i></button>
+                            <h3 class="current-month">Julho 2025</h3>
+                            <button class="next-month-btn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar"></div>
+                        <h4 class="time-title">Horários Disponíveis</h4>
+                        <div class="time-slots"></div>
+                        <button class="btn add-to-cart" data-item="Campo Society" data-price="250">Adicionar ao Carrinho</button>
+                    </div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-main-content">
+                        <div class="item-img">
+                            <img src="https://images.unsplash.com/photo-1518604666860-9ed391f76460?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80" alt="Campo de Areia">
+                        </div>
+                        <div class="item-content">
+                            <h3>Campo de Areia</h3>
+                            <p>Campo de futevôlei e futebol de areia com dimensões regulamentares e iluminação noturna.</p>
+                            <div class="price">R$ 180<span> / hora</span></div>
+                        </div>
+                    </div>
+                    <div class="date-picker">
+                        <h4 class="date-picker-title">Escolha uma Data e Horário</h4>
+                        <div class="calendar-header">
+                            <button class="prev-month-btn"><i class="fas fa-chevron-left"></i></button>
+                            <h3 class="current-month">Julho 2025</h3>
+                            <button class="next-month-btn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar"></div>
+                        <h4 class="time-title">Horários Disponíveis</h4>
+                        <div class="time-slots"></div>
+                        <button class="btn add-to-cart" data-item="Campo de Areia" data-price="180">Adicionar ao Carrinho</button>
+                    </div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-main-content">
+                         <div class="item-img">
+                            <img src="https://images.unsplash.com/photo-1600891964092-4316c288032e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80" alt="Churrasqueira">
+                        </div>
+                        <div class="item-content">
+                            <h3>Churrasqueira Premium</h3>
+                            <p>Área de churrasco completa com churrasqueira, mesas, cadeiras e espaço para até 30 pessoas.</p>
+                            <div class="price">R$ 320<span> / período</span></div>
+                        </div>
+                    </div>
+                    <div class="date-picker">
+                        <h4 class="date-picker-title">Escolha uma Data e Horário</h4>
+                        <div class="calendar-header">
+                            <button class="prev-month-btn"><i class="fas fa-chevron-left"></i></button>
+                            <h3 class="current-month">Julho 2025</h3>
+                            <button class="next-month-btn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar"></div>
+                        <h4 class="time-title">Horários Disponíveis</h4>
+                        <div class="time-slots"></div>
+                        <button class="btn add-to-cart" data-item="Churrasqueira Premium" data-price="320">Adicionar ao Carrinho</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cart-sidebar">
+                <div class="cart-header">
+                    <h2><i class="fas fa-shopping-cart"></i> Seu Carrinho</h2>
+                    <span id="cart-count">0 itens</span>
+                </div>
+                <div class="cart-items" id="cart-items">
+                    <p class="empty-cart">Seu carrinho está vazio</p>
+                </div>
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span id="cart-total">R$ 0,00</span>
+                </div>
+                <button class="btn checkout-btn">Finalizar Reserva</button>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Localização - Peladeiros{% endblock %}
+
+{% block content %}
+<section class="location">
+    <div class="container">
+        <h2 class="section-title">Nossa Localização</h2>
+        <div class="location-content">
+            <div class="location-info">
+                <h3>Como chegar</h3>
+                <p>Estamos localizados no coração da cidade, com fácil acesso e amplo estacionamento.</p>
+                <ul>
+                    <li>
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Av. dos Esportes, 1234 - Centro, São Paulo/SP</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-subway"></i>
+                        <span>Metrô mais próximo: Estação Central (Linha 1 - Azul)</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-bus"></i>
+                        <span>Ônibus: Linhas 1234, 5678 e 9101</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-car"></i>
+                        <span>Estacionamento disponível no local</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="map-container">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.0754267452926!2d-46.65342658447564!3d-23.56573436763838!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1623860000000!5m2!1spt-BR!2sbr" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
