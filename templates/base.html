@@ -9,6 +9,25 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
+
+    {% if messages %}
+        <div class="message-popup-overlay active">
+            <div class="message-popup-box">
+                {% for message in messages %}
+                    <div class="message-popup-content message-{{ message.tags }}">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% else %}
+                            <i class="fas fa-times-circle"></i>
+                        {% endif %}
+                        <p>{{ message }}</p>
+                        <button class="btn btn-close-popup">OK</button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
     <header>
         <div class="container">
             <nav class="navbar">
@@ -21,8 +40,14 @@
                     <li><a href="{% url 'reservas' %}">Reservas</a></li>
                     <li><a href="{% url 'contato' %}">Contato</a></li>
                     <li><a href="{% url 'localizacao' %}">Localização</a></li>
-                    <li><a href="#" id="login-btn-nav">Entrar</a></li>
-                    <li><a href="{% url 'criar_conta' %}" class="btn">Criar Conta</a></li>
+                    
+                    {% if user.is_authenticated %}
+                        <li><span style="color: #333; font-weight: 600; padding: 0 15px;">Olá, {{ user.first_name|default:user.username }}!</span></li>
+                        <li><a href="{% url 'sair' %}">Sair</a></li>
+                    {% else %}
+                        <li><a href="{% url 'entrar' %}">Entrar</a></li>
+                        <li><a href="{% url 'criar_conta' %}" class="btn">Criar Conta</a></li>
+                    {% endif %}
                 </ul>
                 <div class="hamburger">
                     <i class="fas fa-bars"></i>

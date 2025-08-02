@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Entrar - Peladeiros{% endblock %}
+
+{% block content %}
+<section class="login-section" style="padding: 100px 0;">
+    <div class="container">
+        <div class="form-container" style="max-width: 500px; margin: 0 auto;">
+            <div class="form-header">
+                <h2>Acessar sua Conta</h2>
+            </div>
+            <div class="form-body">
+                <form method="post" action="{% url 'entrar' %}">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label for="{{ form.username.id_for_label }}">E-mail</label>
+                        {{ form.username }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.password.id_for_label }}">Senha</label>
+                        {{ form.password }}
+                    </div>
+
+                    <div class="form-footer">
+                        <button type="submit" class="btn">Entrar</button>
+                    </div>
+                </form>
+                <div style="text-align: center; margin-top: 25px;">
+                    <p>Não tem uma conta? <a href="{% url 'criar_conta' %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">Crie uma agora!</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -158,6 +158,16 @@ document.addEventListener('DOMContentLoaded', () => {
     applyMask('id_data_nascimento', masks.data);
     applyMask('id_cep', masks.cep);
     
+    const closePopupButton = document.querySelector('.btn-close-popup');
+    if (closePopupButton) {
+        closePopupButton.addEventListener('click', () => {
+            const popupOverlay = document.querySelector('.message-popup-overlay');
+            if (popupOverlay) {
+                popupOverlay.classList.remove('active');
+            }
+        });
+    }
+    
     // ---------------------------------------------------------------------
     // LÓGICA DO MENU HAMBURGUER
     // ---------------------------------------------------------------------
