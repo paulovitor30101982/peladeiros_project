@@ -1218,3 +1218,63 @@ footer {
     padding: 15px 0;
     border-bottom: 1px solid var(--light-gray);
 }
+
+/* Arquivo: static/css/styles.css */
+
+/* --- Estilos para o Validador de Senha --- */
+
+.password-requirements {
+    font-size: 0.8rem;
+    margin-top: 10px;
+    padding-left: 10px;
+    color: #666;
+}
+
+.password-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.password-requirements li {
+    margin-bottom: 5px;
+    transition: color 0.3s ease;
+    /* Cor padrão (inválido) */
+    color: #d9534f; 
+}
+
+/* Adiciona um 'X' vermelho antes de cada item por padrão */
+.password-requirements li::before {
+    content: '\2717'; /* Código do caractere 'X' */
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+/* Estilo para quando o requisito é atendido (válido) */
+.password-requirements li.valid {
+    color: #5cb85c; /* Verde */
+}
+
+/* Troca o 'X' por um 'check' verde quando o item for válido */
+.password-requirements li.valid::before {
+    content: '\2713'; /* Código do caractere 'check' */
+    font-weight: bold;
+}
+
+/* Estilo para campos inválidos durante a submissão */
+input.is-invalid {
+    border-color: #d9534f !important; /* Borda vermelha de erro */
+    box-shadow: 0 0 0 3px rgba(217, 83, 79, 0.2) !important;
+}
+
+/* --- USERNEME ESCONDIDO: Garante que o campo username escondido seja totalmente invisível --- */
+#id_username, input[type="hidden"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    position: absolute !important;
+}
