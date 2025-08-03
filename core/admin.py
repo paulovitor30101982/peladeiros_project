@@ -1,30 +1,116 @@
-# Arquivo: core/admin.py
-
 from django.contrib import admin
-# Importe os novos modelos que você criou
-from .models import Usuario, Espaco, RegraPreco, Bloqueio
+from django import forms
+# Importando o novo modelo BloqueioRecorrente
+from .models import Usuario, Espaco, RegraPreco, Periodo, PrecoPeriodo, Feriado, Bloqueio, BloqueioRecorrente
 
-# Registre os modelos aqui para que eles apareçam no painel de admin
+# --- VALIDAÇÃO DE SEGURANÇA PARA REGRAS DE FERIADO ADICIONADA ---
+class BaseFeriadoFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        feriado_count = 0
+        for form in self.forms:
+            # Ignora formulários deletados ou inválidos
+            if not form.is_valid() or self.can_delete and self._should_delete_form(form):
+                continue
+            if form.cleaned_data.get('aplicar_em_feriados'):
+                feriado_count += 1
+        
+        if feriado_count > 1:
+            raise forms.ValidationError(
+                "Erro de Validação: Você só pode ter uma regra de preço designada como padrão para feriados por cada modelo de cobrança (Hora ou Período). "
+                "Por favor, desmarque as regras extras antes de salvar."
+            )
 
-# Customização para exibir as regras de preço e bloqueios junto com o Espaço
+# --- VALIDAÇÃO CONTRA CONFLITOS PARA PREÇO POR HORA ---
+class RegraPrecoFormSet(BaseFeriadoFormSet): # Herda da validação de feriado
+    def clean(self):
+        super().clean()
+        horarios_por_dia = {}
+        for form in self.forms:
+            if not form.is_valid() or self.can_delete and self._should_delete_form(form):
+                continue
+
+            dia = form.cleaned_data['dia_semana']
+            inicio = form.cleaned_data['hora_inicio']
+            fim = form.cleaned_data['hora_fim']
+
+            if dia not in horarios_por_dia:
+                horarios_por_dia[dia] = []
+
+            for inicio_existente, fim_existente in horarios_por_dia[dia]:
+                if max(inicio, inicio_existente) < min(fim, fim_existente):
+                    raise forms.ValidationError(
+                        f"Conflito de horário detectado para {dict(form.fields['dia_semana'].choices)[dia]}: "
+                        f"o período de {inicio.strftime('%H:%M')} a {fim.strftime('%H:%M')} "
+                        f"conflita com o período já definido de {inicio_existente.strftime('%H:%M')} a {fim_existente.strftime('%H:%M')}."
+                    )
+            horarios_por_dia[dia].append((inicio, fim))
+
+# --- VALIDAÇÃO CONTRA CONFLITOS PARA PREÇO POR PERÍODO ---
+class PrecoPeriodoFormSet(BaseFeriadoFormSet): # Herda da validação de feriado
+    def clean(self):
+        super().clean()
+        periodos_por_dia = {}
+        for form in self.forms:
+            if not form.is_valid() or self.can_delete and self._should_delete_form(form):
+                continue
+
+            dia = form.cleaned_data['dia_semana']
+            periodo = form.cleaned_data['periodo']
+            
+            chave = (dia, periodo.id)
+            if chave in periodos_por_dia:
+                raise forms.ValidationError(
+                    f"Conflito detectado: O período '{periodo.nome}' para "
+                    f"{dict(form.fields['dia_semana'].choices)[dia]} já foi precificado. "
+                    f"Você não pode ter dois preços para o mesmo período no mesmo dia/grupo de dias."
+                )
+            periodos_por_dia[chave] = True
+
+
+# --- INLINES USANDO OS FORMSETS DE VALIDAÇÃO ---
 class RegraPrecoInline(admin.TabularInline):
     model = RegraPreco
-    extra = 1 # Quantos formulários em branco de regras de preço mostrar
+    formset = RegraPrecoFormSet
+    extra = 1
+    verbose_name = "Regra de Preço por Hora"
+    verbose_name_plural = "1. Regras de Preço por Hora (visível se 'Por Hora' for selecionado)"
+
+class PrecoPeriodoInline(admin.TabularInline):
+    model = PrecoPeriodo
+    formset = PrecoPeriodoFormSet
+    extra = 1
+    verbose_name = "Regra de Preço por Período"
+    verbose_name_plural = "2. Regras de Preço por Período (visível se 'Por Período' for selecionado)"
 
 class BloqueioInline(admin.TabularInline):
     model = Bloqueio
-    extra = 1 # Quantos formulários em branco de bloqueios mostrar
+    extra = 1
+    verbose_name_plural = "Bloqueios por Data Específica"
+
+# --- NOVO INLINE PARA BLOQUEIOS RECORRENTES ---
+class BloqueioRecorrenteInline(admin.TabularInline):
+    model = BloqueioRecorrente
+    extra = 1
+    verbose_name_plural = "Bloqueios Recorrentes (Semanais)"
 
 @admin.register(Espaco)
 class EspacoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'tipo', 'capacidade', 'disponivel')
-    list_filter = ('tipo', 'disponivel')
+    list_display = ('nome', 'tipo', 'modelo_de_cobranca', 'capacidade', 'disponivel')
+    list_filter = ('tipo', 'disponivel', 'modelo_de_cobranca')
     search_fields = ('nome', 'descricao')
-    inlines = [RegraPrecoInline, BloqueioInline]
+    # Adicionado o novo inline de bloqueio recorrente
+    inlines = [RegraPrecoInline, PrecoPeriodoInline, BloqueioRecorrenteInline, BloqueioInline]
 
-# Registro simples para os outros modelos (se precisar editá-los separadamente)
-admin.site.register(RegraPreco)
-admin.site.register(Bloqueio)
+    # Classe para incluir nosso JavaScript customizado na página do admin
+    class Media:
+        js = ('js/admin_espaco.js',)
 
-# Você pode manter o registro do seu usuário customizado aqui se desejar
-# Exemplo: admin.site.register(Usuario)
+@admin.register(Periodo)
+class PeriodoAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'hora_inicio', 'hora_fim')
+
+@admin.register(Feriado)
+class FeriadoAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'data')
+    list_filter = ('data',)
