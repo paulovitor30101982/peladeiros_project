@@ -1,135 +1,11 @@
 // =========================================================================
 // FUNÇÕES GLOBAIS
-// (Funções de ajuda que serão usadas em todo o script)
 // =========================================================================
 
 const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
-
-/**
- * Gera os horários disponíveis para um container específico.
- * @param {HTMLElement} timeSlotsEl O elemento container dos horários.
- */
-function generateTimeSlots(timeSlotsEl) {
-    if (!timeSlotsEl) return;
-    
-    timeSlotsEl.innerHTML = '';
-    const times = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
-    
-    times.forEach(time => {
-        const slot = document.createElement('div');
-        slot.className = 'time-slot';
-        slot.setAttribute('aria-label', `Horário ${time}`);
-        
-        // Simula horários indisponíveis
-        if (Math.random() > 0.7) {
-            slot.classList.add('unavailable');
-            slot.textContent = time;
-        } else {
-            slot.textContent = time;
-            slot.addEventListener('click', () => {
-                const currentCard = timeSlotsEl.closest('.item-card');
-                currentCard.querySelectorAll('.time-slot.selected').forEach(el => el.classList.remove('selected'));
-                slot.classList.add('selected');
-            });
-        }
-        timeSlotsEl.appendChild(slot);
-    });
-}
-
-/**
- * Renderiza o calendário para uma instância de card específica.
- * @param {HTMLElement} card O elemento .item-card que contém o calendário.
- */
-function renderCalendar(card) {
-    const calendarEl = card.querySelector('.calendar');
-    const currentMonthEl = card.querySelector('.current-month');
-    
-    let currentMonth = parseInt(card.dataset.month);
-    let currentYear = parseInt(card.dataset.year);
-
-    calendarEl.innerHTML = '';
-    currentMonthEl.textContent = `${monthNames[currentMonth]} ${currentYear}`;
-    
-    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    dayNames.forEach(day => {
-        const dayEl = document.createElement('div');
-        dayEl.className = 'day-name';
-        dayEl.textContent = day;
-        calendarEl.appendChild(dayEl);
-    });
-    
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
-    for (let i = 0; i < firstDay; i++) {
-        calendarEl.appendChild(document.createElement('div')).className = 'day empty';
-    }
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayEl = document.createElement('div');
-        dayEl.className = 'day';
-        dayEl.textContent = day;
-        dayEl.setAttribute('aria-label', `Dia ${day} de ${monthNames[currentMonth]}`);
-        
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const dayDate = new Date(currentYear, currentMonth, day);
-
-        if (dayDate < today) {
-            dayEl.classList.add('unavailable');
-        } else {
-            dayEl.addEventListener('click', () => {
-                card.querySelectorAll('.day.selected').forEach(el => el.classList.remove('selected'));
-                dayEl.classList.add('selected');
-                generateTimeSlots(card.querySelector('.time-slots'));
-            });
-        }
-        calendarEl.appendChild(dayEl);
-    }
-}
-
-/**
- * Valida a seleção de data e horário para um item específico.
- * @param {HTMLElement} button O botão 'Adicionar ao Carrinho' que foi clicado.
- * @returns {object} Objeto com status de validação e detalhes da reserva.
- */
-function validateReservation(button) {
-    const card = button.closest('.item-card');
-    const selectedDayEl = card.querySelector('.day.selected');
-    const selectedTimeEl = card.querySelector('.time-slot.selected');
-    
-    if (!selectedDayEl || !selectedTimeEl) {
-        alert('❌ Selecione uma data e horário válidos para este item antes de adicionar ao carrinho.');
-        return { isValid: false };
-    }
-    
-    const selectedDay = parseInt(selectedDayEl.textContent);
-    const [monthName, yearStr] = card.querySelector('.current-month').textContent.split(' ');
-    const selectedYear = parseInt(yearStr);
-    const selectedTime = selectedTimeEl.textContent;
-    
-    const selectedMonth = monthNames.indexOf(monthName);
-    const [hours, minutes] = selectedTime.split(':').map(Number);
-    const selectedDate = new Date(selectedYear, selectedMonth, selectedDay, hours, minutes);
-    const now = new Date();
-
-    if (selectedDate < now) {
-        alert('⏰ Não é possível reservar para datas/horários passados.');
-        return { isValid: false };
-    }
-    
-    return { 
-        isValid: true,
-        day: selectedDay,
-        month: monthName,
-        year: selectedYear,
-        time: selectedTime
-    };
-}
-
 
 // =========================================================================
 // INICIALIZAÇÃO DO SCRIPT QUANDO O DOCUMENTO ESTIVER PRONTO
@@ -196,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ---------------------------------------------------------------------
-    // INTEGRAÇÃO COM VIACEP (SEÇÃO CORRIGIDA)
+    // INTEGRAÇÃO COM VIACEP
     // ---------------------------------------------------------------------
     const searchCepBtn = document.getElementById('search-cep');
     if (searchCepBtn) {
@@ -230,12 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error('Falha na busca do CEP:', error);
-                // O alerta só será mostrado em caso de falha real (rede ou CEP não encontrado)
                 if (!document.getElementById('id_logradouro').value) {
                      alert('Ocorreu um erro ao buscar o CEP. Tente novamente.');
                 }
             } finally {
-                // Este bloco sempre será executado
                 searchCepBtn.disabled = false;
                 searchCepBtn.textContent = 'Buscar';
             }
@@ -254,8 +128,179 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------------------------------------------------------------------
-    // INICIALIZAÇÃO DOS CALENDÁRIOS
+    // LÓGICA DE RESERVAS, CALENDÁRIO E PREÇO DINÂMICO (SEÇÃO ATUALIZADA)
     // ---------------------------------------------------------------------
+    
+    function updatePriceDisplay(card) {
+        const espacoId = card.dataset.espacoId;
+        if (typeof regrasPreco === 'undefined' || !regrasPreco[espacoId]) return;
+
+        const selectedDayEl = card.querySelector('.day.selected');
+        const selectedTimeEl = card.querySelector('.time-slot.selected');
+        const selectedPriceValue = card.querySelector('.selected-price-value');
+        const addToCartBtn = card.querySelector('.add-to-cart');
+
+        if (!selectedDayEl || !selectedTimeEl) {
+            selectedPriceValue.textContent = '--';
+            addToCartBtn.dataset.price = '0';
+            return;
+        }
+
+        const day = parseInt(selectedDayEl.textContent);
+        const [monthName, yearStr] = card.querySelector('.current-month').textContent.split(' ');
+        const month = monthNames.indexOf(monthName);
+        const selectedDate = new Date(yearStr, month, day);
+        const diaDaSemana = (selectedDate.getDay() + 6) % 7;
+        const selectedTime = selectedTimeEl.textContent + ':00';
+
+        let precoEncontrado = null;
+        for (const regra of regrasPreco[espacoId]) {
+            if (regra.dia_semana === diaDaSemana && selectedTime >= regra.hora_inicio && selectedTime < regra.hora_fim) {
+                precoEncontrado = parseFloat(regra.preco);
+                break;
+            }
+        }
+
+        if (precoEncontrado !== null) {
+            selectedPriceValue.textContent = `R$ ${precoEncontrado.toFixed(2)}`;
+            addToCartBtn.dataset.price = precoEncontrado;
+        } else {
+            selectedPriceValue.textContent = 'Indisponível';
+            addToCartBtn.dataset.price = '0';
+        }
+    }
+
+    function generateTimeSlots(card) {
+        const timeSlotsEl = card.querySelector('.time-slots');
+        const selectedDayEl = card.querySelector('.day.selected');
+        if (!timeSlotsEl) return;
+        
+        timeSlotsEl.innerHTML = '';
+        updatePriceDisplay(card);
+
+        if (!selectedDayEl) {
+            timeSlotsEl.innerHTML = '<p style="font-size: 0.9em; text-align: center;">Selecione um dia para ver os horários.</p>';
+            return;
+        }
+
+        const espacoId = card.dataset.espacoId;
+        const espacoIndisponibilidades = (typeof indisponibilidades !== 'undefined' && indisponibilidades[espacoId]) ? indisponibilidades[espacoId] : [];
+        const espacoRegras = (typeof regrasPreco !== 'undefined' && regrasPreco[espacoId]) ? regrasPreco[espacoId] : [];
+        
+        const day = parseInt(selectedDayEl.textContent);
+        const [monthName, yearStr] = card.querySelector('.current-month').textContent.split(' ');
+        const month = monthNames.indexOf(monthName);
+        const selectedDate = new Date(yearStr, month, day);
+        const diaDaSemana = (selectedDate.getDay() + 6) % 7;
+
+        const now = new Date();
+        const isToday = selectedDate.toDateString() === now.toDateString();
+
+        let possibleTimes = new Set();
+        const regrasDoDia = espacoRegras.filter(regra => regra.dia_semana === diaDaSemana);
+        
+        regrasDoDia.forEach(regra => {
+            let [startHour] = regra.hora_inicio.split(':').map(Number);
+            let [endHour] = regra.hora_fim.split(':').map(Number);
+            if (endHour === 0) endHour = 24;
+
+            for (let h = startHour; h < endHour; h++) {
+                possibleTimes.add(`${h.toString().padStart(2, '0')}:00`);
+            }
+        });
+
+        const sortedTimes = Array.from(possibleTimes).sort();
+
+        if (sortedTimes.length === 0) {
+            timeSlotsEl.innerHTML = '<p style="font-size: 0.9em; text-align: center;">Não há horários cadastrados para este dia.</p>';
+            return;
+        }
+
+        sortedTimes.forEach(time => {
+            const [hour, minute] = time.split(':');
+            const slotDate = new Date(selectedDate);
+            slotDate.setHours(hour, minute, 0, 0);
+
+            let isUnavailable = false;
+
+            if (isToday && slotDate < now) {
+                isUnavailable = true;
+            }
+
+            if (!isUnavailable) {
+                for (const indisponivel of espacoIndisponibilidades) {
+                    const inicio = new Date(indisponivel.inicio);
+                    const fim = new Date(indisponivel.fim);
+                    if (slotDate >= inicio && slotDate < fim) {
+                        isUnavailable = true;
+                        break;
+                    }
+                }
+            }
+            
+            const slot = document.createElement('div');
+            slot.className = 'time-slot';
+            slot.textContent = time;
+
+            if (isUnavailable) {
+                slot.classList.add('unavailable');
+            } else {
+                slot.addEventListener('click', () => {
+                    card.querySelectorAll('.time-slot.selected').forEach(el => el.classList.remove('selected'));
+                    slot.classList.add('selected');
+                    updatePriceDisplay(card);
+                });
+            }
+            timeSlotsEl.appendChild(slot);
+        });
+    }
+
+    function renderCalendar(card) {
+        const calendarEl = card.querySelector('.calendar');
+        const currentMonthEl = card.querySelector('.current-month');
+        let currentMonth = parseInt(card.dataset.month);
+        let currentYear = parseInt(card.dataset.year);
+
+        calendarEl.innerHTML = '';
+        currentMonthEl.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+        
+        const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        dayNames.forEach(day => {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day-name';
+            dayEl.textContent = day;
+            calendarEl.appendChild(dayEl);
+        });
+        
+        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        
+        for (let i = 0; i < firstDay; i++) {
+            calendarEl.appendChild(document.createElement('div')).className = 'day empty';
+        }
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day';
+            dayEl.textContent = day;
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const dayDate = new Date(currentYear, currentMonth, day);
+
+            if (dayDate < today) {
+                dayEl.classList.add('unavailable');
+            } else {
+                dayEl.addEventListener('click', () => {
+                    card.querySelectorAll('.day.selected').forEach(el => el.classList.remove('selected'));
+                    dayEl.classList.add('selected');
+                    generateTimeSlots(card);
+                });
+            }
+            calendarEl.appendChild(dayEl);
+        }
+    }
+
     document.querySelectorAll('.item-card').forEach(card => {
         const today = new Date();
         card.dataset.month = today.getMonth();
@@ -272,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.dataset.month = month;
                 card.dataset.year = year;
                 renderCalendar(card);
+                generateTimeSlots(card);
             });
             nextMonthBtn.addEventListener('click', () => {
                 let month = parseInt(card.dataset.month);
@@ -281,9 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.dataset.month = month;
                 card.dataset.year = year;
                 renderCalendar(card);
+                generateTimeSlots(card);
             });
             renderCalendar(card);
-            generateTimeSlots(card.querySelector('.time-slots'));
+            generateTimeSlots(card);
         }
     });
     
@@ -302,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cartCountEl.textContent = `${cartItems.length} ${cartItems.length === 1 ? 'item' : 'itens'}`;
         let cartTotal = 0;
         if (cartItems.length > 0) {
-            emptyCartEl.style.display = 'none';
+            if (emptyCartEl) emptyCartEl.style.display = 'none';
             cartItems.forEach(cartItem => {
                 cartTotal += cartItem.price;
                 const itemEl = document.createElement('div');
@@ -320,19 +367,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 cartItemsEl.appendChild(itemEl);
             });
         } else {
-            cartItemsEl.innerHTML = '';
-            cartItemsEl.appendChild(emptyCartEl);
-            emptyCartEl.style.display = 'block';
+            if (emptyCartEl) {
+                cartItemsEl.innerHTML = '';
+                cartItemsEl.appendChild(emptyCartEl);
+                emptyCartEl.style.display = 'block';
+            }
         }
         cartTotalEl.textContent = `R$ ${cartTotal.toFixed(2)}`;
     }
 
+    if (cartItemsEl) {
+        cartItemsEl.addEventListener('click', (e) => {
+            if (e.target && e.target.classList.contains('remove-from-cart')) {
+                const itemId = parseInt(e.target.dataset.id);
+                cartItems = cartItems.filter(item => item.id !== itemId);
+                updateCart();
+            }
+        });
+    }
+
+    function validateReservation(card) {
+        const selectedDayEl = card.querySelector('.day.selected');
+        const selectedTimeEl = card.querySelector('.time-slot.selected');
+        if (!selectedDayEl || !selectedTimeEl) {
+            alert('❌ Selecione uma data e horário válidos para este item antes de adicionar ao carrinho.');
+            return { isValid: false };
+        }
+        const selectedDay = parseInt(selectedDayEl.textContent);
+        const [monthName, yearStr] = card.querySelector('.current-month').textContent.split(' ');
+        const selectedYear = parseInt(yearStr);
+        const selectedTime = selectedTimeEl.textContent;
+        const selectedMonth = monthNames.indexOf(monthName);
+        return { 
+            isValid: true, day: selectedDay, month: monthName,
+            year: selectedYear, time: selectedTime
+        };
+    }
+
     document.querySelectorAll('.add-to-cart').forEach(button => {
         button.addEventListener('click', () => {
-            const validation = validateReservation(button);
+            const card = button.closest('.item-card');
+            const validation = validateReservation(card);
             if (!validation.isValid) return;
-            const item = button.getAttribute('data-item');
-            const price = parseFloat(button.getAttribute('data-price'));
+
+            const price = parseFloat(button.dataset.price);
+            if (price <= 0) {
+                alert('Por favor, selecione um horário com preço válido.');
+                return;
+            }
+
+            const item = button.dataset.item;
             const isDuplicate = cartItems.some(cartItem => 
                 cartItem.item === item && 
                 cartItem.day === validation.day &&
@@ -350,8 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 year: validation.year, time: validation.time
             });
             updateCart();
-            button.classList.add('added');
-            setTimeout(() => button.classList.remove('added'), 1000);
         });
     });
 
@@ -371,14 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (passwordInput) {
         passwordInput.addEventListener('input', () => {
             const value = passwordInput.value;
-            // Atualiza o status de cada requisito
             requirements.length.valid = value.length >= 8;
             requirements.lower.valid = /[a-z]/.test(value);
             requirements.upper.valid = /[A-Z]/.test(value);
             requirements.number.valid = /\d/.test(value);
             requirements.special.valid = /[\W_]/.test(value);
-
-            // Atualiza a classe 'valid' no HTML para dar o feedback visual
             for (const key in requirements) {
                 const req = requirements[key];
                 if (req.el) {
@@ -391,12 +470,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (registrationForm) {
         registrationForm.addEventListener('submit', (e) => {
             const errorMessages = [];
-            
             const requiredFields = registrationForm.querySelectorAll('[required]');
             requiredFields.forEach(field => {
                 if (!field.value.trim()) {
                     const label = document.querySelector(`label[for="${field.id}"]`);
-                    // Garante que o campo de username escondido não gere um alerta visível
                     if (field.id !== 'id_username') {
                         errorMessages.push(`O campo "${label ? label.textContent : field.name}" é obrigatório.`);
                     }
