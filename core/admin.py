@@ -1,3 +1,5 @@
+# Arquivo: core/admin.py
+
 from django.contrib import admin
 from django import forms
 # Importando o novo modelo BloqueioRecorrente

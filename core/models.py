@@ -1,3 +1,5 @@
+# Arquivo: core/models.py
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -121,4 +123,21 @@ class BloqueioRecorrente(models.Model):
     def __str__(self):
         return f"Bloqueio Recorrente em {self.espaco.nome} - {self.get_dia_semana_display()} ({self.hora_inicio}-{self.hora_fim})"
 
-# O modelo Reserva será criado em um próximo passo
+# --- MODELO RESERVA (AGORA ATIVADO) ---
+class Reserva(models.Model):
+    STATUS_CHOICES = (
+        ('confirmada', 'Confirmada'),
+        ('pendente', 'Pendente de Pagamento'),
+        ('cancelada', 'Cancelada'),
+    )
+
+    espaco = models.ForeignKey(Espaco, on_delete=models.PROTECT, related_name='reservas')
+    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='reservas_feitas')
+    data_inicio = models.DateTimeField()
+    data_fim = models.DateTimeField()
+    preco_final = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reserva de {self.espaco.nome} por {self.usuario.username} - {self.data_inicio.strftime('%d/%m/%Y %H:%M')}"

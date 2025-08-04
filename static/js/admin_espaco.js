@@ -1,3 +1,5 @@
+// Arquivo: static/js/admin_espaco.js
+
 // Garante que o jQuery do admin do Django esteja disponível
 if (typeof django !== 'undefined' && typeof django.jQuery !== 'undefined') {
     (function($) {

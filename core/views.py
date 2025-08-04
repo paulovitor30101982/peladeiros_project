@@ -1,5 +1,3 @@
-# Arquivo: core/views.py
-
 from django.shortcuts import render, redirect
 from .forms import UsuarioCreationForm
 # Importações para a view de reservas
@@ -7,7 +5,14 @@ import json
 from decimal import Decimal
 from django.db.models import Min, Case, When, Value, DecimalField
 from django.utils import timezone
-from .models import Espaco, Bloqueio, BloqueioRecorrente, Periodo # Adicionei os modelos que faltavam
+# Adicionado o modelo Reserva
+from .models import Espaco, Bloqueio, BloqueioRecorrente, Periodo, Reserva 
+
+# Novas importações para a view de finalizar_reserva
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from datetime import datetime, timedelta
 
 # Importações de autenticação
 from django.contrib import messages
@@ -23,8 +28,6 @@ def reservas(request):
     View para a página de reservas.
     Busca espaços, regras de preço e indisponibilidades (reservas/bloqueios).
     """
-    # CORREÇÃO: A query agora busca o preço mínimo de ambas as tabelas (hora e período)
-    # e seleciona o correto baseado no 'modelo_de_cobranca' do Espaco.
     espacos = Espaco.objects.filter(disponivel=True).annotate(
         min_preco_hora=Min('regras_preco_hora__preco'),
         min_preco_periodo=Min('regras_preco_periodo__preco')
@@ -39,11 +42,13 @@ def reservas(request):
 
     # Coleta todas as indisponibilidades futuras
     agora = timezone.now()
-    # Futuramente, adicionaremos as Reservas aqui
+    # AGORA BUSCANDO AS RESERVAS REAIS
+    reservas_futuras = Reserva.objects.filter(data_fim__gte=agora, status='confirmada').values('espaco_id', 'data_inicio', 'data_fim')
     bloqueios_futuros = Bloqueio.objects.filter(data_fim__gte=agora).values('espaco_id', 'data_inicio', 'data_fim')
     
     indisponibilidades = {}
-    for item in list(bloqueios_futuros): 
+    # Combina as duas listas de indisponibilidades
+    for item in list(reservas_futuras) + list(bloqueios_futuros): 
         espaco_id = item['espaco_id']
         if espaco_id not in indisponibilidades:
             indisponibilidades[espaco_id] = {'datas_especificas': [], 'recorrentes': []}
@@ -52,7 +57,6 @@ def reservas(request):
             'fim': item['data_fim'].isoformat(),
         })
 
-    # Coleta os bloqueios recorrentes
     bloqueios_recorrentes = BloqueioRecorrente.objects.all()
     for bloqueio in bloqueios_recorrentes:
         espaco_id = bloqueio.espaco.id
@@ -64,7 +68,6 @@ def reservas(request):
             'hora_fim': bloqueio.hora_fim.strftime('%H:%M:%S'),
         })
 
-    # Coleta as regras de preço por hora e por período
     regras_preco_hora_dict = {}
     regras_preco_periodo_dict = {}
     periodos = {p.id: {'nome': p.nome, 'inicio': p.hora_inicio, 'fim': p.hora_fim} for p in Periodo.objects.all()}
@@ -73,7 +76,6 @@ def reservas(request):
         regras_preco_hora_dict[espaco.id] = list(espaco.regras_preco_hora.all().values())
         regras_preco_periodo_dict[espaco.id] = list(espaco.regras_preco_periodo.all().values())
 
-    # Classe customizada para ensinar o JSON a converter tipos de dados do Python
     class CustomJSONEncoder(json.JSONEncoder):
         def default(self, obj):
             if isinstance(obj, Decimal):
@@ -129,3 +131,77 @@ def sair(request):
     logout(request)
     messages.info(request, 'Você saiu da sua conta com segurança.')
     return redirect('index')
+
+# --- NOVA VIEW PARA FINALIZAR A RESERVA ---
+@login_required(login_url='/entrar/')
+@csrf_exempt
+def finalizar_reserva(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            cart_items = data.get('cart_items')
+            month_map = {name: index + 1 for index, name in enumerate(monthNames)}
+
+            if not cart_items:
+                return JsonResponse({'status': 'error', 'message': 'O carrinho está vazio.'}, status=400)
+
+            for item in cart_items:
+                espaco = Espaco.objects.get(id=item['espacoId'])
+                
+                # Lógica para determinar data_inicio e data_fim
+                if espaco.modelo_de_cobranca == 'hora':
+                    data_reserva_str = f"{item['year']}-{month_map[item['month']]}-{item['day']} {item['time']}"
+                    data_inicio = datetime.strptime(data_reserva_str, '%Y-%m-%d %H:%M')
+                    data_fim = data_inicio + timedelta(hours=1)
+                else: # 'periodo'
+                    periodo_nome = item['time'].split(' ')[0]
+                    periodo = Periodo.objects.get(nome=periodo_nome)
+                    data_reserva_str_inicio = f"{item['year']}-{month_map[item['month']]}-{item['day']} {periodo.hora_inicio}"
+                    data_reserva_str_fim = f"{item['year']}-{month_map[item['month']]}-{item['day']} {periodo.hora_fim}"
+                    data_inicio = datetime.strptime(data_reserva_str_inicio, '%Y-%m-%d %H:%M:%S')
+                    data_fim = datetime.strptime(data_reserva_str_fim, '%Y-%m-%d %H:%M:%S')
+
+                # Verifica se já existe uma reserva conflitante
+                conflitos = Reserva.objects.filter(
+                    espaco=espaco,
+                    data_inicio__lt=data_fim,
+                    data_fim__gt=data_inicio,
+                    status='confirmada'
+                )
+                if conflitos.exists():
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f"O horário para {item['item']} no dia {item['day']}/{month_map[item['month']]} já foi reservado. Por favor, atualize a página e tente novamente."
+                    }, status=409)
+
+            # Se não houver conflitos, salva cada item como uma nova reserva
+            for item in cart_items:
+                espaco = Espaco.objects.get(id=item['espacoId'])
+                # Repete a mesma lógica para garantir consistência
+                if espaco.modelo_de_cobranca == 'hora':
+                    data_reserva_str = f"{item['year']}-{month_map[item['month']]}-{item['day']} {item['time']}"
+                    data_inicio = datetime.strptime(data_reserva_str, '%Y-%m-%d %H:%M')
+                    data_fim = data_inicio + timedelta(hours=1)
+                else:
+                    periodo_nome = item['time'].split(' ')[0]
+                    periodo = Periodo.objects.get(nome=periodo_nome)
+                    data_reserva_str_inicio = f"{item['year']}-{month_map[item['month']]}-{item['day']} {periodo.hora_inicio}"
+                    data_reserva_str_fim = f"{item['year']}-{month_map[item['month']]}-{item['day']} {periodo.hora_fim}"
+                    data_inicio = datetime.strptime(data_reserva_str_inicio, '%Y-%m-%d %H:%M:%S')
+                    data_fim = datetime.strptime(data_reserva_str_fim, '%Y-%m-%d %H:%M:%S')
+                
+                Reserva.objects.create(
+                    espaco=espaco,
+                    usuario=request.user,
+                    data_inicio=data_inicio,
+                    data_fim=data_fim,
+                    preco_final=item['price'],
+                    status='confirmada'
+                )
+
+            return JsonResponse({'status': 'success', 'message': 'Sua reserva foi confirmada com sucesso!'})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Ocorreu um erro interno: {str(e)}'}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Método não permitido.'}, status=405)

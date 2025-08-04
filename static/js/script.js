@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     applyMask('id_telefone', masks.telefone);
     applyMask('id_data_nascimento', masks.data);
     applyMask('id_cep', masks.cep);
-    
+
     // Lógica para fechar o pop-up de mensagens
     const closePopupButton = document.querySelector('.btn-close-popup');
     if (closePopupButton) {
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // ---------------------------------------------------------------------
     // LÓGICA DO MENU HAMBURGUER
     // ---------------------------------------------------------------------
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('CEP inválido! O CEP deve conter 8 números.');
                 return;
             }
-            
+
             searchCepBtn.disabled = true;
             searchCepBtn.textContent = 'Buscando...';
 
@@ -93,9 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) {
                     throw new Error('Erro de rede ao buscar o CEP.');
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.erro) {
                     alert('CEP não encontrado!');
                 } else {
@@ -144,11 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const price = selectedTimeEl.dataset.price;
-        if (price) {
+        if (price && price !== 'null') {
             selectedPriceValue.textContent = `R$ ${parseFloat(price).toFixed(2)}`;
             addToCartBtn.dataset.price = price;
         } else {
-            selectedPriceValue.textContent = 'Inválido';
+            selectedPriceValue.textContent = 'Indisponível';
             addToCartBtn.dataset.price = '0';
         }
     }
@@ -162,13 +162,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePriceDisplay(card);
 
         if (!selectedDayEl) {
-            timeSlotsEl.innerHTML = '<p class="info-text">Selecione um dia para ver as opções.</p>';
+            timeSlotsEl.innerHTML = '<p class="info-text" style="font-size: 0.9em; text-align: center;">Selecione um dia para ver as opções.</p>';
             return;
         }
 
         const espacoId = card.dataset.espacoId;
-        const espacoIndisponibilidades = (indisponibilidades[espacoId]?.datas_especificas || []);
-        const bloqueiosRecorrentes = (indisponibilidades[espacoId]?.recorrentes || []);
+        const espacoIndisponibilidades = (typeof indisponibilidades !== 'undefined' && indisponibilidades[espacoId]?.datas_especificas) ? indisponibilidades[espacoId].datas_especificas : [];
+        const bloqueiosRecorrentes = (typeof indisponibilidades !== 'undefined' && indisponibilidades[espacoId]?.recorrentes) ? indisponibilidades[espacoId].recorrentes : [];
         
         const day = parseInt(selectedDayEl.textContent);
         const [monthName, yearStr] = card.querySelector('.current-month').textContent.split(' ');
@@ -177,10 +177,55 @@ document.addEventListener('DOMContentLoaded', () => {
         const diaDaSemana = (selectedDate.getDay() + 6) % 7;
         const now = new Date();
 
+        const renderSlot = (slotInfo) => {
+            const { text, time, price, isPeriod } = slotInfo;
+            const slotDate = new Date(selectedDate);
+            const [hour, minute] = time.split(':');
+            slotDate.setHours(hour, minute, 0, 0);
+
+            let isUnavailable = slotDate < now;
+
+            const isInCart = cartItems.some(item => 
+                String(item.espacoId) === String(espacoId) &&
+                item.year === selectedDate.getFullYear() &&
+                item.month === monthNames[selectedDate.getMonth()] &&
+                item.day === selectedDate.getDate() &&
+                (isPeriod ? item.time === text : item.time === time)
+            );
+            if (isInCart) isUnavailable = true;
+            
+            if (!isUnavailable) {
+                for (const indisponivel of espacoIndisponibilidades) {
+                    const inicio = new Date(indisponivel.inicio);
+                    const fim = new Date(indisponivel.fim);
+                    if (slotDate >= inicio && slotDate < fim) {
+                        isUnavailable = true;
+                        break;
+                    }
+                }
+            }
+            
+            const slot = document.createElement('div');
+            slot.className = isPeriod ? 'period-slot' : 'time-slot';
+            slot.textContent = text;
+            slot.dataset.price = price;
+
+            if (isUnavailable) {
+                slot.classList.add('unavailable');
+            } else {
+                slot.addEventListener('click', () => {
+                    card.querySelectorAll('.time-slot.selected, .period-slot.selected').forEach(el => el.classList.remove('selected'));
+                    slot.classList.add('selected');
+                    updatePriceDisplay(card);
+                });
+            }
+            timeSlotsEl.appendChild(slot);
+        };
+
         if (modeloCobranca === 'hora') {
-            const espacoRegras = regrasPrecoHora[espacoId] || [];
+            const espacoRegras = (typeof regrasPrecoHora !== 'undefined' && regrasPrecoHora[espacoId]) ? regrasPrecoHora[espacoId] : [];
             let possibleTimes = new Set();
-            const regrasDoDia = espacoRegras.filter(regra => [diaDaSemana, 7, 8, 9, 10, 11].includes(regra.dia_semana)); // Simplificado para incluir todos os grupos
+            const regrasDoDia = espacoRegras.filter(regra => [diaDaSemana, 7, 8, 9, 10, 11].includes(regra.dia_semana));
             
             regrasDoDia.forEach(regra => {
                 let [startHour] = regra.hora_inicio.split(':').map(Number);
@@ -194,28 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sortedTimes = Array.from(possibleTimes).sort();
             if (sortedTimes.length === 0) {
-                timeSlotsEl.innerHTML = '<p class="info-text">Não há horários para este dia.</p>'; return;
+                timeSlotsEl.innerHTML = '<p class="info-text" style="font-size: 0.9em; text-align: center;">Não há horários para este dia.</p>'; return;
             }
 
             sortedTimes.forEach(time => {
-                const [hour, minute] = time.split(':');
-                const slotDate = new Date(selectedDate);
-                slotDate.setHours(hour, minute, 0, 0);
-
-                let isUnavailable = slotDate < now;
-
-                if (!isUnavailable) {
-                    for (const indisponivel of espacoIndisponibilidades) {
-                        const inicio = new Date(indisponivel.inicio);
-                        const fim = new Date(indisponivel.fim);
-                        if (slotDate >= inicio && slotDate < fim) { isUnavailable = true; break; }
-                    }
-                }
-                
-                const slot = document.createElement('div');
-                slot.className = 'time-slot';
-                slot.textContent = time;
-
                 let precoEncontrado = null;
                  for (const regra of regrasDoDia) {
                     if (time + ':00' >= regra.hora_inicio && time + ':00' < regra.hora_fim) {
@@ -223,69 +250,25 @@ document.addEventListener('DOMContentLoaded', () => {
                          break;
                     }
                  }
-                slot.dataset.price = precoEncontrado;
-
-                if (isUnavailable || precoEncontrado === null) {
-                    slot.classList.add('unavailable');
-                } else {
-                    slot.addEventListener('click', () => {
-                        card.querySelectorAll('.time-slot.selected').forEach(el => el.classList.remove('selected'));
-                        slot.classList.add('selected');
-                        updatePriceDisplay(card);
-                    });
-                }
-                timeSlotsEl.appendChild(slot);
+                renderSlot({ text: time, time: time, price: precoEncontrado, isPeriod: false });
             });
 
         } else if (modeloCobranca === 'periodo') {
-            const espacoRegras = regrasPrecoPeriodo[espacoId] || [];
+            const espacoRegras = (typeof regrasPrecoPeriodo !== 'undefined' && regrasPrecoPeriodo[espacoId]) ? regrasPrecoPeriodo[espacoId] : [];
             const regrasDoDia = espacoRegras.filter(regra => [diaDaSemana, 7, 8].includes(regra.dia_semana));
 
             if (regrasDoDia.length === 0) {
-                timeSlotsEl.innerHTML = '<p class="info-text">Não há períodos para este dia.</p>'; return;
+                timeSlotsEl.innerHTML = '<p class="info-text" style="font-size: 0.9em; text-align: center;">Não há períodos para este dia.</p>'; return;
             }
             
             regrasDoDia.forEach(regra => {
                 const periodoInfo = periodos[regra.periodo_id];
-                const [startHour, startMinute] = periodoInfo.inicio.split(':');
-                const slotDate = new Date(selectedDate);
-                slotDate.setHours(startHour, startMinute, 0, 0);
-
-                let isUnavailable = slotDate < now;
-                
-                if(!isUnavailable){
-                    for (const indisponivel of espacoIndisponibilidades) {
-                        const inicio = new Date(indisponivel.inicio);
-                        const fim = new Date(indisponivel.fim);
-                        const periodoFim = new Date(selectedDate);
-                        const [endHour, endMinute] = periodoInfo.fim.split(':');
-                        periodoFim.setHours(endHour, endMinute, 0, 0);
-
-                        if ( (inicio < periodoFim) && (fim > slotDate) ) {
-                             isUnavailable = true; break;
-                        }
-                    }
-                }
-                
-                const slot = document.createElement('div');
-                slot.className = 'period-slot';
-                slot.textContent = `${periodoInfo.nome} (${periodoInfo.inicio.slice(0,5)} - ${periodoInfo.fim.slice(0,5)})`;
-                slot.dataset.price = regra.preco;
-
-                if (isUnavailable) {
-                    slot.classList.add('unavailable');
-                } else {
-                    slot.addEventListener('click', () => {
-                        card.querySelectorAll('.period-slot.selected').forEach(el => el.classList.remove('selected'));
-                        slot.classList.add('selected');
-                        updatePriceDisplay(card);
-                    });
-                }
-                timeSlotsEl.appendChild(slot);
+                const slotText = `${periodoInfo.nome} (${periodoInfo.inicio.slice(0,5)} - ${periodoInfo.fim.slice(0,5)})`;
+                renderSlot({ text: slotText, time: periodoInfo.inicio.slice(0,5), price: regra.preco, isPeriod: true });
             });
         }
     }
-
+    
     function renderCalendar(card) {
         const calendarEl = card.querySelector('.calendar');
         const currentMonthEl = card.querySelector('.current-month');
@@ -413,6 +396,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemId = parseInt(e.target.dataset.id);
                 cartItems = cartItems.filter(item => item.id !== itemId);
                 updateCart();
+                document.querySelectorAll('.item-card').forEach(card => {
+                    if (card.querySelector('.day.selected')) {
+                        generateSlots(card);
+                    }
+                });
             }
         });
     }
@@ -448,6 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const item = button.dataset.item;
+            const espacoId = card.dataset.espacoId;
             const isDuplicate = cartItems.some(cartItem => 
                 cartItem.item === item && 
                 cartItem.day === validation.day &&
@@ -460,11 +449,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             cartItems.push({ 
-                id: Date.now(), item, price,
+                id: Date.now(), 
+                espacoId: espacoId,
+                item, price,
                 day: validation.day, month: validation.month,
                 year: validation.year, time: validation.time
             });
             updateCart();
+            generateSlots(card);
         });
     });
 
