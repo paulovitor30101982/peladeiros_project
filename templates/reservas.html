@@ -12,7 +12,7 @@
             <div class="items-column">
 
                 {% for espaco in espacos %}
-                <div class="item-card" data-espaco-id="{{ espaco.id }}">
+                <div class="item-card" data-espaco-id="{{ espaco.id }}" data-modelo="{{ espaco.modelo_de_cobranca }}">
                     <div class="item-main-content">
                         <div class="item-img">
                             {% if espaco.foto %}
@@ -24,13 +24,11 @@
                         <div class="item-content">
                             <h3>{{ espaco.nome }}</h3>
                             <p>{{ espaco.descricao }}</p>
-                            <div class="price-display">
+                            <div class="price price-display">
                                 {% if espaco.preco_minimo %}
-                                    <span class="price-prefix">A partir de</span>
-                                    <span class="price-value">R$ {{ espaco.preco_minimo|stringformat:"d" }}</span>
-                                    <span class="price-suffix">/ hora</span>
+                                    A partir de R$ {{ espaco.preco_minimo|stringformat:"d" }}<span> / {% if espaco.modelo_de_cobranca == 'hora' %}hora{% else %}período{% endif %}</span>
                                 {% else %}
-                                    <span class="price-value">Preço sob consulta</span>
+                                    <span>Preço sob consulta</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -39,24 +37,28 @@
                         <h4 class="date-picker-title">Escolha uma Data e Horário</h4>
                         <div class="calendar-header">
                             <button class="prev-month-btn"><i class="fas fa-chevron-left"></i></button>
-                            <h3 class="current-month">Julho 2025</h3>
+                            <h3 class="current-month">Agosto 2025</h3>
                             <button class="next-month-btn"><i class="fas fa-chevron-right"></i></button>
                         </div>
                         <div class="calendar"></div>
-                        <h4 class="time-title">Horários Disponíveis</h4>
-                        <div class="time-slots"></div>
-
-                        <div class="card-footer">
-                            <div class="selected-price">
-                                <span>Valor:</span>
-                                <strong class="selected-price-value">--</strong>
+                        <h4 class="time-title">Horários/Períodos Disponíveis</h4>
+                        <div class="time-slots">
                             </div>
+
+                        <div class="selected-price" style="display: flex; justify-content: flex-end; align-items: center; margin-top: 20px; min-height: 40px;">
+                            <span style="font-weight: 600; margin-right: 10px;">Valor:</span>
+                            <strong class="selected-price-value" style="font-size: 1.8rem; color: var(--primary);">--</strong>
+                        </div>
+                        
+                        <div class="card-footer" style="margin-top: 10px;">
                             <button class="btn add-to-cart"
+                                    style="width: 100%;"
                                     data-item="{{ espaco.nome }}"
                                     data-price="0">
                                 Adicionar ao Carrinho
                             </button>
                         </div>
+
                     </div>
                 </div>
                 {% empty %}
@@ -88,7 +90,9 @@
 </section>
 
 <script>
-    const regrasPreco = JSON.parse('{{ regras_preco_json|safe }}');
+    const regrasPrecoHora = JSON.parse('{{ regras_preco_hora_json|safe }}');
+    const regrasPrecoPeriodo = JSON.parse('{{ regras_preco_periodo_json|safe }}');
+    const periodos = JSON.parse('{{ periodos_json|safe }}');
     const indisponibilidades = JSON.parse('{{ indisponibilidades_json|safe }}');
 </script>
 

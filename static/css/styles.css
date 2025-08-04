@@ -1324,3 +1324,73 @@ form#registration-form #id_username {
 .btn-close-popup {
     padding: 10px 40px;
 }
+
+/* --- AJUSTES FINAIS NA PÁGINA DE RESERVAS --- */
+
+/* 1. Corrige o layout do rodapé do card (Valor + Botão) */
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    gap: 15px; /* Adiciona um espaço entre os elementos */
+}
+
+.selected-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap; /* Impede que o "R$" quebre a linha */
+}
+
+.selected-price span {
+    font-weight: 600;
+}
+
+.selected-price .selected-price-value {
+    font-size: 1.5rem;
+    color: var(--primary);
+}
+
+.card-footer .btn.add-to-cart {
+    flex-shrink: 0; /* Impede que o botão encolha */
+    padding: 12px 15px; /* Um pouco menor para caber melhor */
+}
+
+
+/* 2. Unifica a aparência dos botões de hora e período */
+.time-slot, .period-slot {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+    flex-basis: calc(25% - 10px); /* Garante 4 por linha */
+}
+
+.time-slot:hover, .period-slot:hover {
+    background-color: #e0e0e0;
+    border-color: #ccc;
+}
+
+.time-slot.selected, .period-slot.selected {
+    background-color: var(--primary);
+    color: #fff;
+    border-color: var(--primary-dark);
+    font-weight: bold;
+}
+
+.time-slot.unavailable, .period-slot.unavailable {
+    background-color: #fafafa;
+    color: #ccc;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+
+.period-slot {
+    flex-basis: 100%; /* Faz o período ocupar a linha toda */
+    font-size: 0.9em;
+}

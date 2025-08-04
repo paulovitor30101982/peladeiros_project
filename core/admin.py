@@ -9,10 +9,10 @@ class BaseFeriadoFormSet(forms.BaseInlineFormSet):
         super().clean()
         feriado_count = 0
         for form in self.forms:
-            # Ignora formulários deletados ou inválidos
-            if not form.is_valid() or self.can_delete and self._should_delete_form(form):
+            # Ignora formulários que serão deletados ou que não têm dados
+            if self.can_delete and self._should_delete_form(form):
                 continue
-            if form.cleaned_data.get('aplicar_em_feriados'):
+            if form.cleaned_data and form.cleaned_data.get('aplicar_em_feriados'):
                 feriado_count += 1
         
         if feriado_count > 1:
@@ -21,13 +21,14 @@ class BaseFeriadoFormSet(forms.BaseInlineFormSet):
                 "Por favor, desmarque as regras extras antes de salvar."
             )
 
-# --- VALIDAÇÃO CONTRA CONFLITOS PARA PREÇO POR HORA ---
+# --- VALIDAÇÃO CONTRA CONFLITOS PARA PREÇO POR HORA (CORRIGIDA) ---
 class RegraPrecoFormSet(BaseFeriadoFormSet): # Herda da validação de feriado
     def clean(self):
         super().clean()
         horarios_por_dia = {}
         for form in self.forms:
-            if not form.is_valid() or self.can_delete and self._should_delete_form(form):
+            # CORREÇÃO: Pula o form se ele estiver vazio ou marcado para deleção
+            if not form.cleaned_data or (self.can_delete and self._should_delete_form(form)):
                 continue
 
             dia = form.cleaned_data['dia_semana']
@@ -46,13 +47,14 @@ class RegraPrecoFormSet(BaseFeriadoFormSet): # Herda da validação de feriado
                     )
             horarios_por_dia[dia].append((inicio, fim))
 
-# --- VALIDAÇÃO CONTRA CONFLITOS PARA PREÇO POR PERÍODO ---
+# --- VALIDAÇÃO CONTRA CONFLITOS PARA PREÇO POR PERÍODO (CORRIGIDA) ---
 class PrecoPeriodoFormSet(BaseFeriadoFormSet): # Herda da validação de feriado
     def clean(self):
         super().clean()
         periodos_por_dia = {}
         for form in self.forms:
-            if not form.is_valid() or self.can_delete and self._should_delete_form(form):
+            # CORREÇÃO: Pula o form se ele estiver vazio ou marcado para deleção
+            if not form.cleaned_data or (self.can_delete and self._should_delete_form(form)):
                 continue
 
             dia = form.cleaned_data['dia_semana']
@@ -74,14 +76,16 @@ class RegraPrecoInline(admin.TabularInline):
     formset = RegraPrecoFormSet
     extra = 1
     verbose_name = "Regra de Preço por Hora"
-    verbose_name_plural = "1. Regras de Preço por Hora (visível se 'Por Hora' for selecionado)"
+    # Título simplificado para o JavaScript encontrar
+    verbose_name_plural = "Regras de Preço por Hora"
 
 class PrecoPeriodoInline(admin.TabularInline):
     model = PrecoPeriodo
     formset = PrecoPeriodoFormSet
     extra = 1
     verbose_name = "Regra de Preço por Período"
-    verbose_name_plural = "2. Regras de Preço por Período (visível se 'Por Período' for selecionado)"
+    # Título simplificado para o JavaScript encontrar
+    verbose_name_plural = "Regras de Preço por Período"
 
 class BloqueioInline(admin.TabularInline):
     model = Bloqueio
