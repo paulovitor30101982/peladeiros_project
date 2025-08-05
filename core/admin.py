@@ -2,8 +2,11 @@
 
 from django.contrib import admin
 from django import forms
-# Importando o novo modelo BloqueioRecorrente
-from .models import Usuario, Espaco, RegraPreco, Periodo, PrecoPeriodo, Feriado, Bloqueio, BloqueioRecorrente
+# Importando TODOS os modelos, incluindo Reserva
+from .models import (
+    Usuario, Espaco, RegraPreco, Periodo, PrecoPeriodo, 
+    Feriado, Bloqueio, BloqueioRecorrente, Reserva
+)
 
 # --- VALIDAÇÃO DE SEGURANÇA PARA REGRAS DE FERIADO ADICIONADA ---
 class BaseFeriadoFormSet(forms.BaseInlineFormSet):
@@ -78,7 +81,6 @@ class RegraPrecoInline(admin.TabularInline):
     formset = RegraPrecoFormSet
     extra = 1
     verbose_name = "Regra de Preço por Hora"
-    # Título simplificado para o JavaScript encontrar
     verbose_name_plural = "Regras de Preço por Hora"
 
 class PrecoPeriodoInline(admin.TabularInline):
@@ -86,7 +88,6 @@ class PrecoPeriodoInline(admin.TabularInline):
     formset = PrecoPeriodoFormSet
     extra = 1
     verbose_name = "Regra de Preço por Período"
-    # Título simplificado para o JavaScript encontrar
     verbose_name_plural = "Regras de Preço por Período"
 
 class BloqueioInline(admin.TabularInline):
@@ -94,7 +95,6 @@ class BloqueioInline(admin.TabularInline):
     extra = 1
     verbose_name_plural = "Bloqueios por Data Específica"
 
-# --- NOVO INLINE PARA BLOQUEIOS RECORRENTES ---
 class BloqueioRecorrenteInline(admin.TabularInline):
     model = BloqueioRecorrente
     extra = 1
@@ -105,10 +105,8 @@ class EspacoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'tipo', 'modelo_de_cobranca', 'capacidade', 'disponivel')
     list_filter = ('tipo', 'disponivel', 'modelo_de_cobranca')
     search_fields = ('nome', 'descricao')
-    # Adicionado o novo inline de bloqueio recorrente
     inlines = [RegraPrecoInline, PrecoPeriodoInline, BloqueioRecorrenteInline, BloqueioInline]
 
-    # Classe para incluir nosso JavaScript customizado na página do admin
     class Media:
         js = ('js/admin_espaco.js',)
 
@@ -120,3 +118,12 @@ class PeriodoAdmin(admin.ModelAdmin):
 class FeriadoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'data')
     list_filter = ('data',)
+
+# --- REGISTRO DO NOVO MODELO RESERVA ---
+@admin.register(Reserva)
+class ReservaAdmin(admin.ModelAdmin):
+    list_display = ('codigo_reserva', 'espaco', 'usuario', 'data_inicio', 'status', 'preco_final')
+    list_filter = ('status', 'espaco')
+    search_fields = ('usuario__username', 'espaco__nome', 'codigo_reserva')
+    # Torna os campos de data e código apenas para leitura, pois não devem ser alterados manualmente
+    readonly_fields = ('data_criacao', 'codigo_reserva')

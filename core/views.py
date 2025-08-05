@@ -2,31 +2,42 @@
 
 from django.shortcuts import render, redirect
 from .forms import UsuarioCreationForm
+# Importações para a view de reservas
 import json
 from decimal import Decimal
 from django.db.models import Min, Case, When, Value, DecimalField
 from django.utils import timezone
+# Adicionado o modelo Reserva
 from .models import Espaco, Bloqueio, BloqueioRecorrente, Periodo, Reserva 
+
+# Novas importações para a view de finalizar_reserva
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
+
+# Importações de autenticação
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 # ---------------------------------------------
 
+# --- CORREÇÃO ADICIONADA AQUI ---
 # Lista de meses para o backend entender os dados do carrinho
 monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ]
+# ---------------------------------------------
 
 def index(request):
     return render(request, 'index.html')
 
 def reservas(request):
-    # ... (esta view permanece a mesma, sem alterações)
+    """
+    View para a página de reservas.
+    Busca espaços, regras de preço e indisponibilidades (reservas/bloqueios).
+    """
     espacos = Espaco.objects.filter(disponivel=True).annotate(
         min_preco_hora=Min('regras_preco_hora__preco'),
         min_preco_periodo=Min('regras_preco_periodo__preco')
@@ -41,7 +52,9 @@ def reservas(request):
     agora = timezone.now()
     reservas_futuras = Reserva.objects.filter(data_fim__gte=agora, status='confirmada').values('espaco_id', 'data_inicio', 'data_fim')
     bloqueios_futuros = Bloqueio.objects.filter(data_fim__gte=agora).values('espaco_id', 'data_inicio', 'data_fim')
+    
     indisponibilidades = {}
+    # Combina as duas listas de indisponibilidades
     for item in list(reservas_futuras) + list(bloqueios_futuros): 
         espaco_id = item['espaco_id']
         if espaco_id not in indisponibilidades:
@@ -50,6 +63,7 @@ def reservas(request):
             'inicio': item['data_inicio'].isoformat(),
             'fim': item['data_fim'].isoformat(),
         })
+
     bloqueios_recorrentes = BloqueioRecorrente.objects.all()
     for bloqueio in bloqueios_recorrentes:
         espaco_id = bloqueio.espaco.id
@@ -60,12 +74,15 @@ def reservas(request):
             'hora_inicio': bloqueio.hora_inicio.strftime('%H:%M:%S'),
             'hora_fim': bloqueio.hora_fim.strftime('%H:%M:%S'),
         })
+
     regras_preco_hora_dict = {}
     regras_preco_periodo_dict = {}
     periodos = {p.id: {'nome': p.nome, 'inicio': p.hora_inicio, 'fim': p.hora_fim} for p in Periodo.objects.all()}
+
     for espaco in espacos:
         regras_preco_hora_dict[espaco.id] = list(espaco.regras_preco_hora.all().values())
         regras_preco_periodo_dict[espaco.id] = list(espaco.regras_preco_periodo.all().values())
+
     class CustomJSONEncoder(json.JSONEncoder):
         def default(self, obj):
             if isinstance(obj, Decimal):
@@ -73,6 +90,7 @@ def reservas(request):
             if hasattr(obj, 'strftime'):
                 return obj.strftime('%H:%M:%S')
             return super().default(obj)
+
     context = {
         'espacos': espacos,
         'regras_preco_hora_json': json.dumps(regras_preco_hora_dict, cls=CustomJSONEncoder),
@@ -141,8 +159,6 @@ def finalizar_reserva(request):
                     data_inicio = datetime.strptime(data_reserva_str, '%Y-%m-%d %H:%M')
                     data_fim = data_inicio + timedelta(hours=1)
                 else:
-                    # --- CORREÇÃO APLICADA AQUI ---
-                    # Extrai o nome completo do período antes do parêntese
                     periodo_nome = item['time'].split(' (')[0].strip()
                     periodo = Periodo.objects.get(nome=periodo_nome)
                     data_reserva_str_inicio = f"{item['year']}-{month_map[item['month']]}-{item['day']} {periodo.hora_inicio}"
@@ -192,16 +208,8 @@ def finalizar_reserva(request):
 
     return JsonResponse({'status': 'error', 'message': 'Método não permitido.'}, status=405)
 
-# --- NOVA VIEW PARA A PÁGINA "MINHAS RESERVAS" ---
-@login_required(login_url='/entrar/') # Garante que apenas usuários logados possam ver a página
+@login_required(login_url='/entrar/')
 def minhas_reservas(request):
-    """
-    Busca e exibe todas as reservas feitas pelo usuário logado.
-    """
-    # Filtra as reservas para pegar apenas as do usuário atual, ordenadas da mais recente para a mais antiga
     reservas_do_usuario = Reserva.objects.filter(usuario=request.user).order_by('-data_criacao')
-    
-    context = {
-        'reservas': reservas_do_usuario
-    }
+    context = { 'reservas': reservas_do_usuario }
     return render(request, 'minhas_reservas.html', context)

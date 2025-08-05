@@ -1,5 +1,6 @@
 # Arquivo: core/models.py
 
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -123,7 +124,7 @@ class BloqueioRecorrente(models.Model):
     def __str__(self):
         return f"Bloqueio Recorrente em {self.espaco.nome} - {self.get_dia_semana_display()} ({self.hora_inicio}-{self.hora_fim})"
 
-# --- MODELO RESERVA (AGORA ATIVADO) ---
+# --- MODELO RESERVA (ATUALIZADO) ---
 class Reserva(models.Model):
     STATUS_CHOICES = (
         ('confirmada', 'Confirmada'),
@@ -131,6 +132,10 @@ class Reserva(models.Model):
         ('cancelada', 'Cancelada'),
     )
 
+    # --- CORREÇÃO APLICADA AQUI ---
+    # Adicionamos null=True para permitir que a migração seja criada.
+    codigo_reserva = models.UUIDField(default=uuid.uuid4, editable=False, null=True)
+    
     espaco = models.ForeignKey(Espaco, on_delete=models.PROTECT, related_name='reservas')
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='reservas_feitas')
     data_inicio = models.DateTimeField()
@@ -140,4 +145,6 @@ class Reserva(models.Model):
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Reserva de {self.espaco.nome} por {self.usuario.username} - {self.data_inicio.strftime('%d/%m/%Y %H:%M')}"
+        # Atualizado para mostrar o código da reserva (se existir)
+        codigo = str(self.codigo_reserva)[:8] if self.codigo_reserva else "N/A"
+        return f"Reserva {codigo} - {self.espaco.nome}"
