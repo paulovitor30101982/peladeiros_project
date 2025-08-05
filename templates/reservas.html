@@ -37,7 +37,7 @@
                         <h4 class="date-picker-title">Escolha uma Data e Horário</h4>
                         <div class="calendar-header">
                             <button class="prev-month-btn"><i class="fas fa-chevron-left"></i></button>
-                            <h3 class="current-month">Agosto 2025</h3>
+                            <h3 class="current-month">Julho 2025</h3>
                             <button class="next-month-btn"><i class="fas fa-chevron-right"></i></button>
                         </div>
                         <div class="calendar"></div>
@@ -45,14 +45,14 @@
                         <div class="time-slots">
                             </div>
 
-                        <div class="selected-price" style="display: flex; justify-content: flex-end; align-items: center; margin-top: 20px; min-height: 40px;">
-                            <span style="font-weight: 600; margin-right: 10px;">Valor:</span>
+                        <div class="selected-price" style="display: flex; justify-content: flex-end; align-items: center; margin-top: 20px; padding: 10px 0; border-top: 1px solid #eee; min-height: 40px;">
+                            <span style="font-weight: 600; margin-right: 10px; font-size: 1.1rem; color: var(--dark);">Valor:</span>
                             <strong class="selected-price-value" style="font-size: 1.8rem; color: var(--primary);">--</strong>
                         </div>
                         
                         <div class="card-footer" style="margin-top: 10px;">
                             <button class="btn add-to-cart"
-                                    style="width: 100%;"
+                                    style="width: 100%; padding: 15px; font-size: 1.1rem;"
                                     data-item="{{ espaco.nome }}"
                                     data-price="0">
                                 Adicionar ao Carrinho
@@ -90,6 +90,7 @@
 </section>
 
 <script>
+    const isUserAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
     const regrasPrecoHora = JSON.parse('{{ regras_preco_hora_json|safe }}');
     const regrasPrecoPeriodo = JSON.parse('{{ regras_preco_periodo_json|safe }}');
     const periodos = JSON.parse('{{ periodos_json|safe }}');

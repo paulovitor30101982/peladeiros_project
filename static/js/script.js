@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     applyMask('id_telefone', masks.telefone);
     applyMask('id_data_nascimento', masks.data);
     applyMask('id_cep', masks.cep);
-
+    
     // Lógica para fechar o pop-up de mensagens
     const closePopupButton = document.querySelector('.btn-close-popup');
     if (closePopupButton) {
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
+    
     // ---------------------------------------------------------------------
     // LÓGICA DO MENU HAMBURGUER
     // ---------------------------------------------------------------------
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('CEP inválido! O CEP deve conter 8 números.');
                 return;
             }
-
+            
             searchCepBtn.disabled = true;
             searchCepBtn.textContent = 'Buscando...';
 
@@ -93,9 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) {
                     throw new Error('Erro de rede ao buscar o CEP.');
                 }
-
+                
                 const data = await response.json();
-
+                
                 if (data.erro) {
                     alert('CEP não encontrado!');
                 } else {
@@ -132,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // LÓGICA DE RESERVAS, CALENDÁRIO E PREÇO DINÂMICO (SEÇÃO ATUALIZADA)
     // ---------------------------------------------------------------------
     
+    let cartItems = []; // Definido no escopo superior para ser acessível por todas as funções de reserva
+
     function updatePriceDisplay(card) {
         const selectedTimeEl = card.querySelector('.time-slot.selected, .period-slot.selected');
         const selectedPriceValue = card.querySelector('.selected-price-value');
@@ -349,9 +351,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // ---------------------------------------------------------------------
-    // LÓGICA DO CARRINHO DE COMPRAS
+    // LÓGICA DO CARRINHO DE COMPRAS E FINALIZAÇÃO
     // ---------------------------------------------------------------------
-    let cartItems = [];
     const cartItemsEl = document.getElementById('cart-items');
     const cartCountEl = document.getElementById('cart-count');
     const cartTotalEl = document.getElementById('cart-total');
@@ -460,6 +461,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const checkoutBtn = document.querySelector('.checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', async () => {
+            if (typeof isUserAuthenticated === 'undefined' || !isUserAuthenticated) {
+                alert('Você precisa estar logado para finalizar uma reserva. Redirecionando para a página de login...');
+                window.location.href = '/entrar/';
+                return;
+            }
+
+            if (cartItems.length === 0) {
+                alert('Seu carrinho está vazio. Adicione itens antes de finalizar.');
+                return;
+            }
+            
+            checkoutBtn.disabled = true;
+            checkoutBtn.textContent = 'Processando...';
+
+            try {
+                const response = await fetch('/finalizar-reserva/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cart_items: cartItems })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    cartItems = [];
+                    updateCart();
+                    window.location.reload();
+                } else {
+                    alert(`Erro ao finalizar a reserva: ${result.message}`);
+                }
+
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                alert('Ocorreu um erro de comunicação com o servidor. Tente novamente.');
+            } finally {
+                checkoutBtn.disabled = false;
+                checkoutBtn.textContent = 'Finalizar Reserva';
+            }
+        });
+    }
+    
     // ---------------------------------------------------------------------
     // VALIDAÇÃO E SUBMISSÃO DE FORMULÁRIOS
     // ---------------------------------------------------------------------
@@ -524,31 +572,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------------------------------
     // LÓGICA DOS MODAIS, CARROSSEL E OUTROS FORMULÁRIOS
     // ---------------------------------------------------------------------
-    const checkoutBtn = document.querySelector('.checkout-btn');
     const paymentModal = document.getElementById('payment-modal');
     const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
     const modalTotalValue = document.getElementById('modal-total-value');
     const loginBtnNav = document.getElementById('login-btn-nav');
     const loginModal = document.getElementById('login-modal');
 
-    if (checkoutBtn && paymentModal) {
-        checkoutBtn.addEventListener('click', () => {
-            if (cartItems.length === 0) {
-                alert('Adicione itens ao carrinho antes de finalizar!');
-                return;
-            }
-            const total = cartItems.reduce((sum, item) => sum + item.price, 0);
-            if(modalTotalValue) modalTotalValue.textContent = `R$ ${total.toFixed(2)}`;
-            paymentModal.classList.add('active');
-        });
-    }
+    // O botão 'checkoutBtn' já foi selecionado acima.
+    // Esta lógica de modal de pagamento é uma simulação, a lógica real está no listener do 'checkoutBtn'.
+    // if (checkoutBtn && paymentModal) {
+    //     // a lógica de clique foi movida para a função de finalização de reserva real
+    // }
 
     if (confirmPaymentBtn) {
         confirmPaymentBtn.addEventListener('click', () => {
             paymentModal.classList.remove('active');
-            alert('Pagamento simulado com sucesso! Reserva confirmada.');
-            cartItems = [];
-            updateCart();
         });
     }
 

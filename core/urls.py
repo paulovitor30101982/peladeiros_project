@@ -10,4 +10,5 @@ urlpatterns = [
     path('entrar/', views.entrar, name='entrar'),
     path('sair/', views.sair, name='sair'),
     path('finalizar-reserva/', views.finalizar_reserva, name='finalizar_reserva'),
+    
 ]
