@@ -191,3 +191,17 @@ def finalizar_reserva(request):
             return JsonResponse({'status': 'error', 'message': f'Ocorreu um erro interno: {str(e)}'}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Método não permitido.'}, status=405)
+
+# --- NOVA VIEW PARA A PÁGINA "MINHAS RESERVAS" ---
+@login_required(login_url='/entrar/') # Garante que apenas usuários logados possam ver a página
+def minhas_reservas(request):
+    """
+    Busca e exibe todas as reservas feitas pelo usuário logado.
+    """
+    # Filtra as reservas para pegar apenas as do usuário atual, ordenadas da mais recente para a mais antiga
+    reservas_do_usuario = Reserva.objects.filter(usuario=request.user).order_by('-data_criacao')
+    
+    context = {
+        'reservas': reservas_do_usuario
+    }
+    return render(request, 'minhas_reservas.html', context)
