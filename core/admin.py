@@ -8,7 +8,7 @@ from .models import (
     Feriado, Bloqueio, BloqueioRecorrente, Reserva
 )
 
-# --- VALIDAÇÃO DE SEGURANÇA PARA REGRAS DE FERIADO ADICIONADA ---
+# --- VALIDAÇÃO DE SEGURANÇA PARA REGRAS DE FERIADO ---
 class BaseFeriadoFormSet(forms.BaseInlineFormSet):
     def clean(self):
         super().clean()
@@ -119,11 +119,11 @@ class FeriadoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'data')
     list_filter = ('data',)
 
-# --- REGISTRO DO NOVO MODELO RESERVA ---
+# --- REGISTRO DO NOVO MODELO RESERVA (CORRIGIDO) ---
 @admin.register(Reserva)
 class ReservaAdmin(admin.ModelAdmin):
     list_display = ('codigo_reserva', 'espaco', 'usuario', 'data_inicio', 'status', 'preco_final')
     list_filter = ('status', 'espaco')
     search_fields = ('usuario__username', 'espaco__nome', 'codigo_reserva')
     # Torna os campos de data e código apenas para leitura, pois não devem ser alterados manualmente
-    readonly_fields = ('data_criacao', 'codigo_reserva')
+    readonly_fields = ('data_criacao', 'codigo_reserva')    

@@ -210,6 +210,33 @@ def finalizar_reserva(request):
 
 @login_required(login_url='/entrar/')
 def minhas_reservas(request):
-    reservas_do_usuario = Reserva.objects.filter(usuario=request.user).order_by('-data_criacao')
-    context = { 'reservas': reservas_do_usuario }
+    """
+    Busca e exibe todas as reservas feitas pelo usuário logado,
+    separadas por status (próximas, histórico, canceladas).
+    """
+    agora = timezone.now()
+    
+    # Filtra as reservas do usuário em três listas diferentes
+    reservas_proximas = Reserva.objects.filter(
+        usuario=request.user, 
+        status='confirmada', 
+        data_inicio__gte=agora
+    ).order_by('data_inicio')
+
+    reservas_historico = Reserva.objects.filter(
+        usuario=request.user, 
+        status='confirmada', 
+        data_inicio__lt=agora
+    ).order_by('-data_inicio')
+
+    reservas_canceladas = Reserva.objects.filter(
+        usuario=request.user, 
+        status='cancelada'
+    ).order_by('-data_criacao')
+    
+    context = {
+        'proximas': reservas_proximas,
+        'historico': reservas_historico,
+        'canceladas': reservas_canceladas,
+    }
     return render(request, 'minhas_reservas.html', context)

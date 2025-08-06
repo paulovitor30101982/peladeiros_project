@@ -1,0 +1,41 @@
+{% load static %}
+{% if reservas %}
+    <div class="reservations-list">
+        {% for reserva in reservas %}
+            <div class="reserva-card">
+                <div class="reserva-card-img">
+                    {% if reserva.espaco.foto %}
+                        <img src="{{ reserva.espaco.foto.url }}" alt="{{ reserva.espaco.nome }}">
+                    {% else %}
+                        <img src="{% static 'images/default-image.png' %}" alt="Imagem padrão">
+                    {% endif %}
+                </div>
+                <div class="reserva-card-body">
+                    <div class="reserva-card-header">
+                        <h3>{{ reserva.espaco.nome }}</h3>
+                        <span class="reserva-status status-{{ reserva.status }}">{{ reserva.get_status_display }}</span>
+                    </div>
+                    <div class="reserva-card-details">
+                        <p><i class="fas fa-barcode"></i> <strong>Cód. Reserva:</strong> {{ reserva.codigo_reserva|stringformat:".8s" }}</p>
+                        <p><i class="fas fa-calendar-alt"></i> <strong>Data:</strong> {{ reserva.data_inicio|date:"d/m/Y" }}</p>
+                        <p><i class="fas fa-clock"></i> <strong>Horário:</strong> {{ reserva.data_inicio|date:"H:i" }} - {{ reserva.data_fim|date:"H:i" }}</p>
+                        <p><i class="fas fa-calendar-check"></i> <strong>Reservado em:</strong> {{ reserva.data_criacao|date:"d/m/Y à\\s H:i" }}</p>
+                    </div>
+                </div>
+                <div class="reserva-card-footer">
+                    <div class="reserva-price">R$ {{ reserva.preco_final|stringformat:"d" }}</div>
+                    {% if show_cancel_button %}
+                        <button class="btn btn-secondary cancel-reserva-btn" data-reserva-id="{{ reserva.id }}">Cancelar</button>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="no-reservas">
+        <p>Nenhuma reserva encontrada nesta categoria.</p>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{% url 'reservas' %}" class="btn">Fazer uma reserva</a>
+        </div>
+    </div>
+{% endif %}

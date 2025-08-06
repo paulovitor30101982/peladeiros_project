@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     applyMask('id_data_nascimento', masks.data);
     applyMask('id_cep', masks.cep);
     
-    // Lógica para fechar o pop-up de mensagens
     const closePopupButton = document.querySelector('.btn-close-popup');
     if (closePopupButton) {
         closePopupButton.addEventListener('click', () => {
@@ -357,6 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartCountEl = document.getElementById('cart-count');
     const cartTotalEl = document.getElementById('cart-total');
     const emptyCartEl = document.querySelector('.empty-cart');
+    const checkoutBtn = document.querySelector('.checkout-btn');
     
     function updateCart() {
         if (!cartItemsEl || !cartCountEl || !cartTotalEl || !emptyCartEl) return;
@@ -461,7 +461,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const checkoutBtn = document.querySelector('.checkout-btn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', async () => {
             if (typeof isUserAuthenticated === 'undefined' || !isUserAuthenticated) {

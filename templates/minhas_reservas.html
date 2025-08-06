@@ -7,39 +7,22 @@
 <section class="user-reservations" style="padding-top: 120px; padding-bottom: 80px;">
     <div class="container">
         <h2 class="section-title">Minhas Reservas</h2>
-        
-        {% if reservas %}
-            <div class="reservations-list" style="display: flex; flex-direction: column; gap: 20px;">
-                {% for reserva in reservas %}
-                    <div class="reserva-card" style="background: white; border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 25px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="color: var(--dark); margin-bottom: 10px;">{{ reserva.espaco.nome }}</h3>
-                            <p style="color: var(--gray); margin-bottom: 5px;">
-                                <i class="fas fa-calendar-alt" style="margin-right: 8px; color: var(--primary);"></i>
-                                <strong>Data:</strong> {{ reserva.data_inicio|date:"d/m/Y" }}
-                            </p>
-                            <p style="color: var(--gray);">
-                                <i class="fas fa-clock" style="margin-right: 8px; color: var(--primary);"></i>
-                                <strong>Horário:</strong> {{ reserva.data_inicio|date:"H:i" }} - {{ reserva.data_fim|date:"H:i" }}
-                            </p>
-                        </div>
-                        <div style="text-align: right;">
-                            <p style="font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 10px;">
-                                R$ {{ reserva.preco_final|stringformat:"d" }}
-                            </p>
-                            <span style="background-color: #e9f5f4; color: #2a9d8f; padding: 5px 10px; border-radius: 20px; font-weight: 600; text-transform: capitalize;">
-                                {{ reserva.status }}
-                            </span>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p style="text-align: center; font-size: 1.2rem; color: var(--gray);">Você ainda não fez nenhuma reserva.</p>
-            <div style="text-align: center; margin-top: 30px;">
-                <a href="{% url 'reservas' %}" class="btn">Fazer minha primeira reserva</a>
-            </div>
-        {% endif %}
+
+        <div class="tabs-container">
+            <button class="tab-link active" data-tab="proximas">Próximas</button>
+            <button class="tab-link" data-tab="historico">Histórico</button>
+            <button class="tab-link" data-tab="canceladas">Canceladas</button>
+        </div>
+
+        <div class="tab-content active" id="proximas">
+            {% include 'partials/reserva_list.html' with reservas=proximas show_cancel_button=True %}
+        </div>
+        <div class="tab-content" id="historico">
+            {% include 'partials/reserva_list.html' with reservas=historico %}
+        </div>
+        <div class="tab-content" id="canceladas">
+            {% include 'partials/reserva_list.html' with reservas=canceladas %}
+        </div>
     </div>
 </section>
 {% endblock %}
