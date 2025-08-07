@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,9 +13,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-o7@1#+-p%6@m5u8!j&(p(tpj%*+dva-15vro)8o1qvbt8s_4o='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['']
 
 
 AUTH_USER_MODEL = 'core.Usuario'
