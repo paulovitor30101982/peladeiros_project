@@ -1,3 +1,5 @@
+# Arquivo: config/settings.py
+
 import os
 from pathlib import Path
 
@@ -5,13 +7,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-o7@1#+-p%6@m5u8!j&(p(tpj%*+dva-15vro)8o1qvbt8s_4o='
 DEBUG = True
-ALLOWED_HOSTS = ['']
 
 # --- CORREÇÃO APLICADA AQUI ---
-# A variável AUTH_USER_MODEL agora aponta para o modelo 'Usuario' dentro da app 'main'.
+# Adicionamos '127.0.0.1' à lista de anfitriões permitidos para desenvolvimento local
+ALLOWED_HOSTS = ['127.0.0.1']
+
+# A sua configuração de AUTH_USER_MODEL e INSTALLED_APPS já estava correta
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -19,8 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # A sua app personalizada já estava correta aqui
-    'main',
+    'main.apps.MainConfig',
     'usuarios',
     'reservas',
 ]
@@ -54,7 +56,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
 # Database
 DATABASES = {
     'default': {
@@ -62,7 +63,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -72,23 +72,20 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
-
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
+# Static and Media files
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# --- CONFIGURAÇÃO PARA UPLOAD DE ARQUIVOS DE MÍDIA ---
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
