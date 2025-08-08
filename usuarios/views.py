@@ -1,12 +1,12 @@
 # Arquivo: usuarios/views.py
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-
+from django.http import JsonResponse
 from .forms import UsuarioCreationForm
 from reservas.models import Reserva # Importa o modelo Reserva da app 'reservas'
 
@@ -62,3 +62,22 @@ def sair(request):
     logout(request)
     messages.info(request, 'Você saiu da sua conta com segurança.')
     return redirect('index')
+
+@login_required(login_url='/entrar/')
+def cancelar_reserva(request, reserva_id):
+    """
+    Muda o status de uma reserva específica para 'cancelada'.
+    """
+    # Garante que a reserva existe e pertence ao usuário que está a fazer o pedido
+    reserva = get_object_or_404(Reserva, id=reserva_id, usuario=request.user)
+
+    if request.method == 'POST':
+        # Altera o status para 'cancelada'
+        reserva.status = 'cancelada'
+        reserva.save()
+        
+        # Envia uma resposta de sucesso para o JavaScript
+        return JsonResponse({'status': 'success', 'message': 'Reserva cancelada com sucesso.'})
+
+    # Se o método não for POST, retorna um erro
+    return JsonResponse({'status': 'error', 'message': 'Método não permitido.'}, status=405)

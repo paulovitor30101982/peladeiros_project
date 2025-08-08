@@ -654,3 +654,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// ---------------------------------------------------------------------
+    // LÓGICA DO BOTÃO DE CANCELAR RESERVA
+    // ---------------------------------------------------------------------
+    document.body.addEventListener('click', function(event) {
+        if (event.target.classList.contains('cancel-reserva-btn')) {
+            const reservaId = event.target.dataset.reservaId;
+            const card = event.target.closest('.reserva-card');
+
+            // Pede confirmação ao utilizador
+            const isConfirmed = confirm('Tem a certeza de que deseja cancelar esta reserva? Esta ação não pode ser desfeita.');
+
+            if (isConfirmed) {
+                // Obtém o token CSRF dos cookies para uma requisição segura
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(`/cancelar-reserva/${reservaId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken, // Envia o token de segurança
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message); // Exibe a mensagem de sucesso
+                        window.location.reload(); // Recarrega a página para mover a reserva para a aba "Canceladas"
+                    } else {
+                        alert(`Erro: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao cancelar reserva:', error);
+                    alert('Ocorreu um erro de comunicação ao tentar cancelar a reserva.');
+                });
+            }
+        }
+    });
+
