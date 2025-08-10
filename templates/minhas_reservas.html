@@ -6,20 +6,22 @@
 {% block content %}
 <section class="user-reservations" style="padding-top: 120px; padding-bottom: 80px;">
     <div class="container">
+        {% csrf_token %}
+
         <h2 class="section-title">Minhas Reservas</h2>
 
         <div class="tabs-container">
             <button class="tab-link active" data-tab="proximas">Próximas</button>
-            <button class="tab-link" data-tab="historico">Histórico</button>
-            <button class="tab-link" data-tab="canceladas">Canceladas</button>
+            <button class="tab-link" data-tab="utilizadas">Utilizadas</button> <button class="tab-link" data-tab="canceladas">Canceladas</button>
         </div>
 
         <div class="tab-content active" id="proximas">
             {% include 'partials/reserva_list.html' with reservas=proximas show_cancel_button=True %}
         </div>
-        <div class="tab-content" id="historico">
-            {% include 'partials/reserva_list.html' with reservas=historico %}
+        
+        <div class="tab-content" id="utilizadas"> {% include 'partials/reserva_list.html' with reservas=utilizadas %}
         </div>
+        
         <div class="tab-content" id="canceladas">
             {% include 'partials/reserva_list.html' with reservas=canceladas %}
         </div>

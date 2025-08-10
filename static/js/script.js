@@ -569,19 +569,79 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------------------------------------------------------------------
-    // LÓGICA DOS MODAIS, CARROSSEL E OUTROS FORMULÁRIOS
+    // LÓGICA DAS ABAS NA PÁGINA "MINHAS RESERVAS"
     // ---------------------------------------------------------------------
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            const tabId = link.dataset.tab;
+
+            tabLinks.forEach(l => l.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+
+            link.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+
+    // ---------------------------------------------------------------------
+    // --- NOVO E CORRIGIDO ---
+    // LÓGICA DO BOTÃO DE CANCELAR RESERVA
+    // ---------------------------------------------------------------------
+    // Usando delegação de eventos no body para garantir que botões em conteúdo dinâmico funcionem
+    document.body.addEventListener('click', function(event) {
+        // Verifica se o elemento clicado é o botão de cancelar
+        if (event.target.classList.contains('cancel-reserva-btn')) {
+            const reservaId = event.target.dataset.reservaId;
+            
+            // Pede confirmação ao usuário
+            const isConfirmed = confirm('Tem a certeza de que deseja cancelar esta reserva? Esta ação não pode ser desfeita.');
+
+            if (isConfirmed) {
+                // Obtém o token CSRF do elemento <input> escondido que o Django renderiza
+                const csrftokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (!csrftokenInput) {
+                    alert('Erro de segurança: Token CSRF não encontrado. Recarregue a página.');
+                    return;
+                }
+                const csrftoken = csrftokenInput.value;
+
+                fetch(`/cancelar-reserva/${reservaId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken, // Envia o token de segurança
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message); // Exibe a mensagem de sucesso
+                        window.location.reload(); // Recarrega a página para mover a reserva para a aba "Canceladas"
+                    } else {
+                        alert(`Erro: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao cancelar reserva:', error);
+                    alert('Ocorreu um erro de comunicação ao tentar cancelar a reserva.');
+                });
+            }
+        }
+    });
+
+
+    // ---------------------------------------------------------------------
+    // LÓGICA DE MODAIS, CARROSSEL E OUTROS FORMULÁRIOS (SEM ALTERAÇÕES)
+    // ---------------------------------------------------------------------
+    // Esta seção permanece igual...
     const paymentModal = document.getElementById('payment-modal');
     const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
     const modalTotalValue = document.getElementById('modal-total-value');
     const loginBtnNav = document.getElementById('login-btn-nav');
     const loginModal = document.getElementById('login-modal');
-
-    // O botão 'checkoutBtn' já foi selecionado acima.
-    // Esta lógica de modal de pagamento é uma simulação, a lógica real está no listener do 'checkoutBtn'.
-    // if (checkoutBtn && paymentModal) {
-    //     // a lógica de clique foi movida para a função de finalização de reserva real
-    // }
 
     if (confirmPaymentBtn) {
         confirmPaymentBtn.addEventListener('click', () => {
@@ -653,44 +713,5 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCarousel();
         }
     });
-});
 
-// ---------------------------------------------------------------------
-    // LÓGICA DO BOTÃO DE CANCELAR RESERVA
-    // ---------------------------------------------------------------------
-    document.body.addEventListener('click', function(event) {
-        if (event.target.classList.contains('cancel-reserva-btn')) {
-            const reservaId = event.target.dataset.reservaId;
-            const card = event.target.closest('.reserva-card');
-
-            // Pede confirmação ao utilizador
-            const isConfirmed = confirm('Tem a certeza de que deseja cancelar esta reserva? Esta ação não pode ser desfeita.');
-
-            if (isConfirmed) {
-                // Obtém o token CSRF dos cookies para uma requisição segura
-                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-                fetch(`/cancelar-reserva/${reservaId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken, // Envia o token de segurança
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert(data.message); // Exibe a mensagem de sucesso
-                        window.location.reload(); // Recarrega a página para mover a reserva para a aba "Canceladas"
-                    } else {
-                        alert(`Erro: ${data.message}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao cancelar reserva:', error);
-                    alert('Ocorreu um erro de comunicação ao tentar cancelar a reserva.');
-                });
-            }
-        }
-    });
-
+}); // Fim do 'DOMContentLoaded'
