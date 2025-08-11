@@ -9,17 +9,16 @@ from .models import Usuario
 class UsuarioCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = Usuario
+        # Garante que o campo 'complemento' está incluído
         fields = (
             'username', 'first_name', 'sexo', 'email', 'cpf', 
             'data_nascimento', 'telefone', 'cep', 'logradouro', 'numero', 
             'complemento', 'bairro', 'cidade', 'estado'
         )
     
-    # --- CORREÇÃO APLICADA AQUI ---
     first_name = forms.CharField(label="Nome Completo", required=True)
     sexo = forms.ChoiceField(choices=Usuario.SEXO_CHOICES, label="Sexo", required=True)
     email = forms.EmailField(label="E-mail", required=True)
-    # --- E AQUI ---
     cpf = forms.CharField(label="CPF", required=True)
     data_nascimento = forms.DateField(
         label="Data de Nascimento",
@@ -34,6 +33,7 @@ class UsuarioCreationForm(UserCreationForm):
     bairro = forms.CharField(label="Bairro", required=True)
     cidade = forms.CharField(label="Cidade", required=True)
     estado = forms.CharField(label="Estado", required=True)
+    # Define o campo 'complemento' como não obrigatório
     complemento = forms.CharField(label="Complemento", required=False)
 
     def __init__(self, *args, **kwargs):
@@ -52,7 +52,6 @@ class UsuarioCreationForm(UserCreationForm):
         self.fields['password1'].label = "Senha"
         self.fields['password2'].widget.attrs.update({'id': 'id_password2', 'autocomplete': 'new-password'})
         self.fields['password2'].label = "Confirmar Senha"
-        # --- GARANTINDO A ETIQUETA CORRETA AQUI TAMBÉM ---
         self.fields['first_name'].label = "Nome Completo"
         if 'username' in self.fields:
              self.fields['username'].widget = forms.HiddenInput()
@@ -70,22 +69,12 @@ class UsuarioCreationForm(UserCreationForm):
 # Formulário para ATUALIZAR os dados de um usuário existente
 # --------------------------------------------------------------------------
 class AtualizacaoUsuarioForm(forms.ModelForm):
-    """
-    Formulário para o usuário atualizar seus próprios dados cadastrais.
-    """
     class Meta:
         model = Usuario
         fields = [
             'first_name', 'email', 'sexo', 'cpf', 'data_nascimento', 'telefone', 
             'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado'
         ]
-        # --- CORREÇÕES APLICADAS DIRETAMENTE AQUI, NA FORMA MAIS MODERNA ---
-        labels = {
-            'first_name': 'Nome Completo',
-            'cpf': 'CPF',
-            'email': 'Endereço de e-mail',
-            'data_nascimento': 'Data de nascimento',
-        }
 
     def __init__(self, *args, **kwargs):
         super(AtualizacaoUsuarioForm, self).__init__(*args, **kwargs)

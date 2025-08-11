@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'main.apps.MainConfig',
     'usuarios',
     'reservas',
+    'contato',
 ]
 
 MIDDLEWARE = [

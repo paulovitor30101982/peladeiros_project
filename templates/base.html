@@ -37,7 +37,7 @@
                 <ul class="nav-links">
                     <li><a href="{% url 'index' %}">Home</a></li>
                     <li><a href="{% url 'reservas:reservas' %}">Reservas</a></li>
-                    <li><a href="{% url 'contato' %}">Contato</a></li>
+                    <li><a href="{% url 'contato:contato' %}">Contato</a></li>
                     <li><a href="{% url 'localizacao' %}">Localização</a></li>
                     
                     {% if user.is_authenticated %}
@@ -82,7 +82,7 @@
                     <ul>
                         <li><a href="{% url 'index' %}">Home</a></li>
                         <li><a href="{% url 'reservas:reservas' %}">Reservas</a></li>
-                        <li><a href="{% url 'contato' %}">Contato</a></li>
+                        <li><a href="{% url 'contato:contato' %}">Contato</a></li>
                         <li><a href="{% url 'localizacao' %}">Localização</a></li>
                     </ul>
                 </div>
