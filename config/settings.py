@@ -8,11 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-o7@1#+-p%6@m5u8!j&(p(tpj%*+dva-15vro)8o1qvbt8s_4o='
 DEBUG = True
 
-# --- CORREÇÃO APLICADA AQUI ---
-# Adicionamos '127.0.0.1' à lista de anfitriões permitidos para desenvolvimento local
 ALLOWED_HOSTS = ['127.0.0.1']
 
-# A sua configuração de AUTH_USER_MODEL e INSTALLED_APPS já estava correta
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
 INSTALLED_APPS = [
@@ -39,6 +36,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
+# A sua configuração de templates já está correta.
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -73,7 +71,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
+# --- CORREÇÃO APLICADA AQUI ---
+# Alterado para Português do Brasil para melhorar as mensagens do Django.
+LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_TZ = True

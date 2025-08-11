@@ -4,33 +4,51 @@
 {% block title %}Entrar - Peladeiros{% endblock %}
 
 {% block content %}
-<section class="login-section" style="padding: 100px 0;">
+<section class="login-section" style="padding: 120px 0 80px 0;">
     <div class="container">
         <div class="form-container" style="max-width: 500px; margin: 0 auto;">
             <div class="form-header">
-                <h2>Acessar sua Conta</h2>
+                <h2 class="section-title">Aceder à sua Conta</h2>
             </div>
             <div class="form-body">
-                <form method="post" action="{% url 'entrar' %}">
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        {% if message.tags == 'error' %}
+                            <div class="alert alert-danger">{{ message }}</div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" action="{% url 'usuarios:entrar' %}">
                     {% csrf_token %}
 
-                    <div class="form-group">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-group mb-3">
                         <label for="{{ form.username.id_for_label }}">E-mail</label>
                         {{ form.username }}
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="{{ form.password.id_for_label }}">Senha</label>
                         {{ form.password }}
                     </div>
 
-                    <div class="form-footer">
-                        <button type="submit" class="btn">Entrar</button>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Entrar</button>
                     </div>
+
+                    <div class="text-center mt-3">
+                        <p>Não tem uma conta? <a href="{% url 'usuarios:criar_conta' %}">Crie uma agora</a></p>
+                        </div>
                 </form>
-                <div style="text-align: center; margin-top: 25px;">
-                    <p>Não tem uma conta? <a href="{% url 'criar_conta' %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">Crie uma agora!</a></p>
-                </div>
             </div>
         </div>
     </div>

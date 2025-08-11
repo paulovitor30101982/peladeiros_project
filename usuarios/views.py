@@ -1,5 +1,4 @@
 # Arquivo: usuarios/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -7,28 +6,10 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.http import JsonResponse
-from .forms import UsuarioCreationForm
-from reservas.models import Reserva # Importa o modelo Reserva da app 'reservas'
 
-@login_required(login_url='/entrar/')
-def minhas_reservas(request):
-    agora = timezone.now()
-    reservas_proximas = Reserva.objects.filter(
-        usuario=request.user, status='confirmada', data_inicio__gte=agora
-    ).order_by('data_inicio')
-    reservas_historico = Reserva.objects.filter(
-        usuario=request.user, status='confirmada', data_inicio__lt=agora
-    ).order_by('-data_inicio')
-    reservas_canceladas = Reserva.objects.filter(
-        usuario=request.user, status='cancelada'
-    ).order_by('-data_criacao')
-    
-    context = {
-        'proximas': reservas_proximas,
-        'historico': reservas_historico,
-        'canceladas': reservas_canceladas,
-    }
-    return render(request, 'minhas_reservas.html', context)
+# Importa os dois formulários
+from .forms import UsuarioCreationForm, AtualizacaoUsuarioForm
+from reservas.models import Reserva
 
 def criar_conta(request):
     if request.method == 'POST':
@@ -36,7 +17,7 @@ def criar_conta(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Conta criada com sucesso! Você já pode fazer o login.')
-            return redirect('entrar')
+            return redirect('usuarios:entrar')
     else:
         form = UsuarioCreationForm()
     return render(request, 'criar-conta.html', {'form': form})
@@ -63,21 +44,47 @@ def sair(request):
     messages.info(request, 'Você saiu da sua conta com segurança.')
     return redirect('index')
 
+# --- NOVA VIEW PARA EDITAR O PERFIL ---
+@login_required(login_url='/entrar/')
+def minha_conta(request):
+    if request.method == 'POST':
+        # Carrega o formulário com os dados enviados (POST) e a instância do usuário atual
+        form = AtualizacaoUsuarioForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Seus dados foram atualizados com sucesso!')
+            return redirect('usuarios:minha_conta')
+        else:
+            messages.error(request, 'Ocorreu um erro. Por favor, verifique os dados informados.')
+    else:
+        # Carrega o formulário com os dados atuais do usuário logado
+        form = AtualizacaoUsuarioForm(instance=request.user)
+    
+    context = {
+        'form': form
+    }
+    return render(request, 'minha_conta.html', context)
+
+
+@login_required(login_url='/entrar/')
+def minhas_reservas(request):
+    agora = timezone.now()
+    reservas_proximas = Reserva.objects.filter(usuario=request.user, status='confirmada', data_inicio__gte=agora).order_by('data_inicio')
+    reservas_utilizadas = Reserva.objects.filter(usuario=request.user, status='confirmada', data_inicio__lt=agora).order_by('-data_inicio')
+    reservas_canceladas = Reserva.objects.filter(usuario=request.user, status='cancelada').order_by('-data_criacao')
+    
+    context = {
+        'proximas': reservas_proximas,
+        'utilizadas': reservas_utilizadas,
+        'canceladas': reservas_canceladas,
+    }
+    return render(request, 'minhas_reservas.html', context)
+
 @login_required(login_url='/entrar/')
 def cancelar_reserva(request, reserva_id):
-    """
-    Muda o status de uma reserva específica para 'cancelada'.
-    """
-    # Garante que a reserva existe e pertence ao usuário que está a fazer o pedido
     reserva = get_object_or_404(Reserva, id=reserva_id, usuario=request.user)
-
     if request.method == 'POST':
-        # Altera o status para 'cancelada'
         reserva.status = 'cancelada'
         reserva.save()
-        
-        # Envia uma resposta de sucesso para o JavaScript
         return JsonResponse({'status': 'success', 'message': 'Reserva cancelada com sucesso.'})
-
-    # Se o método não for POST, retorna um erro
     return JsonResponse({'status': 'error', 'message': 'Método não permitido.'}, status=405)
