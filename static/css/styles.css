@@ -1479,7 +1479,7 @@ form#registration-form #id_username {
 .cep-group {
     display: flex;       /* Ativa o layout flexível */
     align-items: center; /* Alinha o campo e o botão verticalmente */
-    gap: 900px;           /* Adiciona um pequeno espaço entre o campo e o botão */
+    gap: 40px;           /* Adiciona um pequeno espaço entre o campo e o botão */
 }
 
 .cep-group input {

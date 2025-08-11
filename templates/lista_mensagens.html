@@ -8,6 +8,12 @@
     <div class="container">
         <h2 class="section-title">Mensagens de Contato Recebidas</h2>
         <p class="section-subtitle">Lista de todas as mensagens enviadas através do site.</p>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
 
         <div class="table-responsive">
             <table class="table table-striped table-hover">
@@ -17,14 +23,14 @@
                         <th>Nome</th>
                         <th>Assunto</th>
                         <th>Status</th>
-                    </tr>
+                        <th>Ações</th> </tr>
                 </thead>
                 <tbody>
                     {% for msg in mensagens %}
-                    <tr>
+                    <tr style="{% if not msg.lida %}font-weight: bold;{% endif %}">
                         <td>{{ msg.data_envio|date:"d/m/Y H:i" }}</td>
-                        <td>{{ msg.nome }} ({{ msg.email }})</td>
-                        <td>{{ msg.assunto }}</td>
+                        <td>{{ msg.nome }}</td>
+                        <td>{{ msg.get_assunto_display }}</td>
                         <td>
                             {% if msg.lida %}
                                 <span class="badge bg-success">Lida</span>
@@ -32,10 +38,13 @@
                                 <span class="badge bg-warning">Não Lida</span>
                             {% endif %}
                         </td>
-                        </tr>
+                        <td>
+                            <a href="{% url 'contato:detalhe_mensagem' msg.id %}" class="btn btn-sm btn-info">Ver Detalhes</a>
+                        </td>
+                    </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center">Nenhuma mensagem recebida ainda.</td>
+                        <td colspan="5" class="text-center">Nenhuma mensagem recebida ainda.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
