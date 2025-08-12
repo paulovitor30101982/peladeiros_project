@@ -89,6 +89,82 @@
     </div>
 </section>
 
+<div class="payment-modal-overlay" id="payment-modal-overlay">
+    <div class="payment-modal-content">
+        <div class="payment-modal-header">
+            <h2>Formas de Pagamento</h2>
+            <button class="close-payment-modal">&times;</button>
+        </div>
+        <div class="payment-modal-body">
+            <div class="payment-method-tabs">
+                <button class="payment-tab active" data-tab="pix"><i class="fas fa-qrcode"></i> PIX</button>
+                <button class="payment-tab" data-tab="cartao"><i class="far fa-credit-card"></i> Cartão de Crédito/Débito</button>
+                <button class="payment-tab" data-tab="boleto"><i class="fas fa-barcode"></i> Boleto</button>
+            </div>
+
+            <div class="payment-tab-content active" id="pix-content">
+                <p class="payment-instructions">Aponte a câmera do seu celular para o QR Code ou use o código "copia e cola" para pagar.</p>
+                <div class="qr-code-container">
+                    <img src="/media/espacos_fotos/QR-Code.jpg" alt="Simulação de QR Code PIX">
+                </div>
+                <div class="pix-code-container">
+                    <input type="text" value="00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540550.005802BR5925Joao da Silva Gouveia6009SAO PAULO62070503***6304EAC1" readonly>
+                    <button id="copy-pix-code-btn" title="Copiar código PIX"><i class="far fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="payment-tab-content" id="cartao-content">
+                <p class="payment-instructions">Insira os dados do seu cartão de crédito para continuar.</p>
+                <form id="credit-card-form" class="cc-form">
+                    <div class="form-group">
+                        <label for="cc-number">Número do Cartão</label>
+                        <input type="text" id="cc-number" placeholder="0000 0000 0000 0000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cc-name">Nome no Cartão</label>
+                        <input type="text" id="cc-name" placeholder="Ex: JOAO D SILVA" required>
+                    </div>
+                    <div class="form-row-cc">
+                        <div class="form-group">
+                            <label for="cc-expiry">Validade (MM/AA)</label>
+                            <input type="text" id="cc-expiry" placeholder="MM/AA" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cc-cvv">CVV</label>
+                            <input type="text" id="cc-cvv" placeholder="123" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cc-installments">Número de Parcelas</label>
+                        <select id="cc-installments" class="form-control">
+                            <option value="1">1x sem juros</option>
+                            <option value="2">2x sem juros</option>
+                            <option value="3">3x sem juros</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="payment-tab-content" id="boleto-content">
+                <div class="boleto-info">
+                    <i class="fas fa-barcode fa-5x"></i>
+                    <p>Ao confirmar, o boleto será "gerado". Após compensação do boleto a reserva será efetivada.</p>
+                    <small>Esta é apenas uma simulação. Nenhum boleto real será gerado.</small>
+                </div>
+            </div>
+
+        </div>
+        <div class="payment-modal-footer">
+            <div class="modal-total">
+                <span>Total:</span>
+                <strong id="modal-total-value">R$ 0,00</strong>
+            </div>
+            <button class="btn" id="confirm-payment-btn">Confirmar Pagamento</button>
+        </div>
+    </div>
+</div>
+
+
 <script>
     const isUserAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
     const regrasPrecoHora = JSON.parse('{{ regras_preco_hora_json|safe }}');

@@ -1,4 +1,5 @@
 # Arquivo: reservas/urls.py
+# NENHUMA ALTERAÇÃO NECESSÁRIA.
 
 from django.urls import path
 from . import views

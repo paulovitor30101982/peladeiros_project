@@ -14,7 +14,7 @@ const monthNames = [
 document.addEventListener('DOMContentLoaded', () => {
 
     // ---------------------------------------------------------------------
-    // CÓDIGO DE MÁSCARAS DE FORMULÁRIO
+    // CÓDIGO DE MÁSCARAS DE FORMULÁRIO (ATUALIZADO)
     // ---------------------------------------------------------------------
     const masks = {
         cpf: value => value.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14),
@@ -23,16 +23,25 @@ document.addEventListener('DOMContentLoaded', () => {
             return v.length >= 11 ? v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
         },
         data: value => value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 10),
-        cep: value => value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9)
+        cep: value => value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9),
+        // NOVAS MÁSCARAS PARA O CARTÃO DE CRÉDITO
+        creditCard: value => value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19),
+        expiryDate: value => value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 5),
+        cvv: value => value.replace(/\D/g, '').slice(0, 4)
     };
     const applyMask = (inputId, maskFunction) => {
         const input = document.getElementById(inputId);
         if (input) input.addEventListener('input', (e) => { e.target.value = maskFunction(e.target.value); });
     };
+    // Máscaras antigas
     applyMask('id_cpf', masks.cpf);
     applyMask('id_telefone', masks.telefone);
     applyMask('id_data_nascimento', masks.data);
     applyMask('id_cep', masks.cep);
+    // Novas máscaras para o modal de pagamento
+    applyMask('cc-number', masks.creditCard);
+    applyMask('cc-expiry', masks.expiryDate);
+    applyMask('cc-cvv', masks.cvv);
     
     const closePopupButton = document.querySelector('.btn-close-popup');
     if (closePopupButton) {
@@ -128,10 +137,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------------------------------------------------------------------
-    // LÓGICA DE RESERVAS, CALENDÁRIO E PREÇO DINÂMICO (SEÇÃO ATUALIZADA)
+    // LÓGICA DE RESERVAS, CALENDÁRIO E PREÇO DINÂMICO
     // ---------------------------------------------------------------------
     
-    let cartItems = []; // Definido no escopo superior para ser acessível por todas as funções de reserva
+    // Variável do carrinho movida para o escopo da Lógica do Carrinho
+    let cartItems = [];
 
     function updatePriceDisplay(card) {
         const selectedTimeEl = card.querySelector('.time-slot.selected, .period-slot.selected');
@@ -169,7 +179,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const espacoId = card.dataset.espacoId;
         const espacoIndisponibilidades = (typeof indisponibilidades !== 'undefined' && indisponibilidades[espacoId]?.datas_especificas) ? indisponibilidades[espacoId].datas_especificas : [];
-        const bloqueiosRecorrentes = (typeof indisponibilidades !== 'undefined' && indisponibilidades[espacoId]?.recorrentes) ? indisponibilidades[espacoId].recorrentes : [];
         
         const day = parseInt(selectedDayEl.textContent);
         const [monthName, yearStr] = card.querySelector('.current-month').textContent.split(' ');
@@ -350,13 +359,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // ---------------------------------------------------------------------
-    // LÓGICA DO CARRINHO DE COMPRAS E FINALIZAÇÃO
+    // LÓGICA DO CARRINHO, FINALIZAÇÃO E MODAL DE PAGAMENTO (SEÇÃO ATUALIZADA)
     // ---------------------------------------------------------------------
     const cartItemsEl = document.getElementById('cart-items');
     const cartCountEl = document.getElementById('cart-count');
     const cartTotalEl = document.getElementById('cart-total');
     const emptyCartEl = document.querySelector('.empty-cart');
     const checkoutBtn = document.querySelector('.checkout-btn');
+    
+    // Elementos do Modal de Pagamento
+    const paymentModalOverlay = document.getElementById('payment-modal-overlay');
+    const closePaymentModalBtn = document.querySelector('.close-payment-modal');
+    const modalTotalValue = document.getElementById('modal-total-value');
+    const paymentTabs = document.querySelectorAll('.payment-tab');
+    const paymentContents = document.querySelectorAll('.payment-tab-content');
+    const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+    const copyPixCodeBtn = document.getElementById('copy-pix-code-btn');
     
     function updateCart() {
         if (!cartItemsEl || !cartCountEl || !cartTotalEl || !emptyCartEl) return;
@@ -388,7 +406,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 emptyCartEl.style.display = 'block';
             }
         }
-        cartTotalEl.textContent = `R$ ${cartTotal.toFixed(2)}`;
+        const totalFormatted = `R$ ${cartTotal.toFixed(2)}`;
+        cartTotalEl.textContent = totalFormatted;
+        if(modalTotalValue) modalTotalValue.textContent = totalFormatted; // Atualiza o total no modal também
     }
 
     if (cartItemsEl) {
@@ -461,8 +481,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Listener para o botão 'Finalizar Reserva' (agora abre o modal)
     if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', async () => {
+        checkoutBtn.addEventListener('click', () => {
             if (typeof isUserAuthenticated === 'undefined' || !isUserAuthenticated) {
                 alert('Você precisa estar logado para finalizar uma reserva. Redirecionando para a página de login...');
                 window.location.href = '/entrar/';
@@ -474,36 +495,96 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            checkoutBtn.disabled = true;
-            checkoutBtn.textContent = 'Processando...';
-
-            try {
-                const response = await fetch('/finalizar-reserva/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ cart_items: cartItems })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert(result.message);
-                    cartItems = [];
-                    updateCart();
-                    window.location.reload();
-                } else {
-                    alert(`Erro ao finalizar a reserva: ${result.message}`);
-                }
-
-            } catch (error) {
-                console.error('Erro na requisição:', error);
-                alert('Ocorreu um erro de comunicação com o servidor. Tente novamente.');
-            } finally {
-                checkoutBtn.disabled = false;
-                checkoutBtn.textContent = 'Finalizar Reserva';
+            // Abre o modal de pagamento
+            if (paymentModalOverlay) {
+                paymentModalOverlay.classList.add('active');
             }
+        });
+    }
+
+    // Funções do Modal de Pagamento
+    function closePaymentModal() {
+        if (paymentModalOverlay) {
+            paymentModalOverlay.classList.remove('active');
+        }
+    }
+
+    if (closePaymentModalBtn) {
+        closePaymentModalBtn.addEventListener('click', closePaymentModal);
+    }
+    if (paymentModalOverlay) {
+        paymentModalOverlay.addEventListener('click', (e) => {
+            if (e.target === paymentModalOverlay) {
+                closePaymentModal();
+            }
+        });
+    }
+
+    // Lógica das abas do modal
+    if (paymentTabs.length > 0) {
+        paymentTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                paymentTabs.forEach(t => t.classList.remove('active'));
+                paymentContents.forEach(c => c.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+            });
+        });
+    }
+
+    // Lógica para copiar o código PIX
+    if (copyPixCodeBtn) {
+        copyPixCodeBtn.addEventListener('click', () => {
+            const pixCodeInput = document.querySelector('.pix-code-container input');
+            navigator.clipboard.writeText(pixCodeInput.value).then(() => {
+                alert('Código PIX copiado para a área de transferência!');
+            }).catch(err => {
+                console.error('Falha ao copiar:', err);
+                alert('Falha ao copiar o código.');
+            });
+        });
+    }
+
+    // Listener do botão 'Confirmar Pagamento' (executa a simulação e a finalização)
+    if (confirmPaymentBtn) {
+        confirmPaymentBtn.addEventListener('click', () => {
+            const originalBtnText = confirmPaymentBtn.textContent;
+            confirmPaymentBtn.disabled = true;
+            confirmPaymentBtn.textContent = 'Processando...';
+
+            // Simulação de 2 segundos de processamento
+            setTimeout(async () => {
+                try {
+                    // Após a simulação, executa a requisição real ao backend
+                    const response = await fetch('/finalizar-reserva/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ cart_items: cartItems })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        closePaymentModal();
+                        alert(result.message);
+                        cartItems = [];
+                        updateCart();
+                        window.location.reload(); // Recarrega a página para atualizar tudo
+                    } else {
+                        alert(`Erro ao finalizar a reserva: ${result.message}`);
+                    }
+
+                } catch (error) {
+                    console.error('Erro na requisição:', error);
+                    alert('Ocorreu um erro de comunicação com o servidor. Tente novamente.');
+                } finally {
+                    confirmPaymentBtn.disabled = false;
+                    confirmPaymentBtn.textContent = originalBtnText;
+                }
+            }, 2000); // 2 segundos de atraso
         });
     }
     
@@ -574,33 +655,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabLinks = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    tabLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            const tabId = link.dataset.tab;
+    if (tabLinks.length > 0) {
+        tabLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const tabId = link.dataset.tab;
 
-            tabLinks.forEach(l => l.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
+                tabLinks.forEach(l => l.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
 
-            link.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+                link.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
         });
-    });
+    }
 
     // ---------------------------------------------------------------------
-    // --- NOVO E CORRIGIDO ---
     // LÓGICA DO BOTÃO DE CANCELAR RESERVA
     // ---------------------------------------------------------------------
-    // Usando delegação de eventos no body para garantir que botões em conteúdo dinâmico funcionem
     document.body.addEventListener('click', function(event) {
-        // Verifica se o elemento clicado é o botão de cancelar
         if (event.target.classList.contains('cancel-reserva-btn')) {
             const reservaId = event.target.dataset.reservaId;
             
-            // Pede confirmação ao usuário
             const isConfirmed = confirm('Tem a certeza de que deseja cancelar esta reserva? Esta ação não pode ser desfeita.');
 
             if (isConfirmed) {
-                // Obtém o token CSRF do elemento <input> escondido que o Django renderiza
                 const csrftokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
                 if (!csrftokenInput) {
                     alert('Erro de segurança: Token CSRF não encontrado. Recarregue a página.');
@@ -611,15 +689,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch(`/cancelar-reserva/${reservaId}/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': csrftoken, // Envia o token de segurança
+                        'X-CSRFToken': csrftoken,
                         'Content-Type': 'application/json'
                     }
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        alert(data.message); // Exibe a mensagem de sucesso
-                        window.location.reload(); // Recarrega a página para mover a reserva para a aba "Canceladas"
+                        alert(data.message);
+                        window.location.reload();
                     } else {
                         alert(`Erro: ${data.message}`);
                     }
@@ -634,20 +712,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ---------------------------------------------------------------------
-    // LÓGICA DE MODAIS, CARROSSEL E OUTROS FORMULÁRIOS (SEM ALTERAÇÕES)
+    // LÓGICA DE MODAIS GENÉRICOS, CARROSSEL E OUTROS FORMULÁRIOS
     // ---------------------------------------------------------------------
-    // Esta seção permanece igual...
-    const paymentModal = document.getElementById('payment-modal');
-    const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
-    const modalTotalValue = document.getElementById('modal-total-value');
     const loginBtnNav = document.getElementById('login-btn-nav');
     const loginModal = document.getElementById('login-modal');
-
-    if (confirmPaymentBtn) {
-        confirmPaymentBtn.addEventListener('click', () => {
-            paymentModal.classList.remove('active');
-        });
-    }
 
     if (loginBtnNav && loginModal) {
         loginBtnNav.addEventListener('click', (e) => {
