@@ -4,7 +4,7 @@
 {% block title %}Contato - Peladeiros{% endblock %}
 
 {% block content %}
-<section class="contact">
+<section class="contact" style="padding: 80px 0;">
     <div class="container">
         <h2 class="section-title">Entre em Contato</h2>
         <div class="contact-grid">
@@ -36,28 +36,39 @@
             </div>
             <div class="contact-form">
                 <h3>Envie uma Mensagem</h3>
-                <form id="contact-form" method="post">
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
                     {% csrf_token %}
-                    <div class="form-group">
-                        <label for="contact-name">Nome</label>
-                        <input type="text" id="contact-name" name="name" required>
+                    
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="{{ form.nome.id_for_label }}">Nome</label>
+                        {{ form.nome }}
                     </div>
-                    <div class="form-group">
-                        <label for="contact-email">E-mail</label>
-                        <input type="email" id="contact-email" name="email" required>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="{{ form.email.id_for_label }}">E-mail</label>
+                        {{ form.email }}
                     </div>
-                    <div class="form-group">
-                        <label for="contact-phone">Telefone</label>
-                        <input type="tel" id="contact-phone" name="phone">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="{{ form.telefone.id_for_label }}">Telefone</label>
+                        {{ form.telefone }}
                     </div>
-                    <div class="form-group">
-                        <label for="contact-subject">Assunto</label>
-                        <input type="text" id="contact-subject" name="subject" required>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="{{ form.assunto.id_for_label }}">Assunto</label>
+                        {{ form.assunto }}
                     </div>
-                    <div class="form-group">
-                        <label for="contact-message">Mensagem</label>
-                        <textarea id="contact-message" name="message" rows="5" required></textarea>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="{{ form.mensagem.id_for_label }}">Mensagem</label>
+                        {{ form.mensagem }}
                     </div>
+                    
                     <button type="submit" class="btn">Enviar Mensagem</button>
                 </form>
             </div>

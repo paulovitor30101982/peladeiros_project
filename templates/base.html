@@ -36,17 +36,23 @@
                 </a>
                 <ul class="nav-links">
                     <li><a href="{% url 'index' %}">Home</a></li>
-                    <li><a href="{% url 'reservas' %}">Reservas</a></li>
-                    <li><a href="{% url 'contato' %}">Contato</a></li>
+                    <li><a href="{% url 'reservas:reservas' %}">Reservas</a></li>
+                    <li><a href="{% url 'contato:contato' %}">Contato</a></li>
                     <li><a href="{% url 'localizacao' %}">Localização</a></li>
                     
                     {% if user.is_authenticated %}
+                        {% if user.is_staff %}
+                        <li><a href="{% url 'contato:lista_mensagens' %}" style="color: #264653;">Mensagens</a></li>
+                        {% endif %}
+
                         <li><span style="color: #333; font-weight: 600; padding: 0 15px;">Olá, {{ user.first_name|default:user.username }}!</span></li>
-                        <li><a href="{% url 'minhas_reservas' %}">Minhas Reservas</a></li>
-                        <li><a href="{% url 'sair' %}">Sair</a></li>
+                        
+                        <li><a href="{% url 'usuarios:minha_conta' %}">Minha Conta</a></li>
+                        <li><a href="{% url 'reservas:minhas_reservas' %}">Minhas Reservas</a></li>
+                        <li><a href="{% url 'usuarios:sair' %}">Sair</a></li>
                     {% else %}
-                        <li><a href="{% url 'entrar' %}">Entrar</a></li>
-                        <li><a href="{% url 'criar_conta' %}" class="btn">Criar Conta</a></li>
+                        <li><a href="{% url 'usuarios:entrar' %}">Entrar</a></li>
+                        <li><a href="{% url 'usuarios:criar_conta' %}" class="btn">Criar Conta</a></li>
                     {% endif %}
                 </ul>
                 <div class="hamburger">
@@ -79,8 +85,8 @@
                     <h3>Links Rápidos</h3>
                     <ul>
                         <li><a href="{% url 'index' %}">Home</a></li>
-                        <li><a href="{% url 'reservas' %}">Reservas</a></li>
-                        <li><a href="{% url 'contato' %}">Contato</a></li>
+                        <li><a href="{% url 'reservas:reservas' %}">Reservas</a></li>
+                        <li><a href="{% url 'contato:contato' %}">Contato</a></li>
                         <li><a href="{% url 'localizacao' %}">Localização</a></li>
                     </ul>
                 </div>
@@ -128,7 +134,7 @@
                         <button type="submit" class="btn">Entrar</button>
                         <div class="login-links">
                             <a href="#" id="forgot-password">Esqueci minha senha</a>
-                            <a href="{% url 'criar_conta' %}">Criar nova conta</a>
+                            <a href="{% url 'usuarios:criar_conta' %}">Criar nova conta</a>
                         </div>
                     </div>
                 </form>
