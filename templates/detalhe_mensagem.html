@@ -1,55 +1,70 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Detalhe da Mensagem - Peladeiros{% endblock %}
+{% block title %}Detalhes da Mensagem - {{ mensagem.assunto }}{% endblock %}
 
 {% block content %}
-<section class="message-detail" style="padding: 120px 0 80px 0;">
+<section class="message-detail-page" style="padding: 120px 0 80px 0;">
     <div class="container">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">Detalhes da Mensagem</h2>
-                <a href="{% url 'contato:lista_mensagens' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Voltar para a Lista
-                </a>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-success">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
+        <h2 class="section-title">Detalhes da Mensagem</h2>
+        <p class="text-center" style="margin-top: -40px; margin-bottom: 40px;">
+            <a href="{% url 'contato:lista_mensagens' %}" class="btn btn-outline">&larr; Voltar para todas as mensagens</a>
+        </p>
 
-                <p><strong>De:</strong> {{ mensagem.nome }}</p>
-                <p><strong>Email:</strong> <a href="mailto:{{ mensagem.email }}">{{ mensagem.email }}</a></p>
-                <p><strong>Telefone:</strong> {{ mensagem.telefone|default:"Não informado" }}</p>
-                <p><strong>Data de Envio:</strong> {{ mensagem.data_envio|date:"d/m/Y \à\s H:i" }}</p>
-                <p><strong>Assunto:</strong> {{ mensagem.get_assunto_display }}</p>
-                <p><strong>Status:</strong>
-                    {% if mensagem.lida %}
-                        <span class="badge bg-success">Lida</span>
-                    {% else %}
-                        <span class="badge bg-warning">Não Lida</span>
-                    {% endif %}
-                </p>
-                <hr>
-                <h5>Mensagem:</h5>
-                <p style="white-space: pre-wrap; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">{{ mensagem.mensagem }}</p>
-                
-                <hr>
-                
-                <div class="d-flex justify-content-end gap-2">
-                    {% if not mensagem.lida %}
-                    <form action="{% url 'contato:marcar_como_lida' mensagem.id %}" method="post" class="d-inline">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success" style="text-align:center; margin-bottom: 20px;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="message-detail-grid">
+            
+            <div class="left-column">
+                <div class="detail-card sender-info-card">
+                    <h3>Remetente</h3>
+                    <ul class="sender-info-list">
+                        <li><i class="fas fa-user"></i><strong>{{ mensagem.nome }}</strong></li>
+                        <li><i class="fas fa-envelope"></i><a href="mailto:{{ mensagem.email }}">{{ mensagem.email }}</a></li>
+                        <li><i class="fas fa-phone"></i><span>{{ mensagem.telefone }}</span></li>
+                    </ul>
+                </div>
+
+                <div class="detail-card actions-card" style="margin-top: 30px;">
+                    <h3>Ações</h3>
+                    <form action="{% url 'contato:marcar_como_lida' mensagem.id %}" method="POST" style="display: contents;">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-success">Marcar como Lida</button>
+                        <button type="submit" class="btn">
+                            {% if mensagem.lida %}
+                                <i class="fas fa-envelope-open"></i> Marcar como Não Lida
+                            {% else %}
+                                <i class="fas fa-check"></i> Marcar como Lida
+                            {% endif %}
+                        </button>
                     </form>
-                    {% endif %}
                     
-                    <form action="{% url 'contato:deletar_mensagem' mensagem.id %}" method="post" class="d-inline" onsubmit="return confirm('Tem a certeza que deseja apagar esta mensagem permanentemente?');">
+                    <form action="{% url 'contato:deletar_mensagem' mensagem.id %}" method="POST" onsubmit="return confirm('Tem certeza que deseja apagar esta mensagem permanentemente? Esta ação não pode ser desfeita.');" style="display: contents;">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Apagar Mensagem</button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Apagar Mensagem</button>
                     </form>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="detail-card message-content-card">
+                    <h3>Mensagem</h3>
+                    <ul class="sender-info-list">
+                        <li><i class="fas fa-paperclip"></i><strong>Assunto:</strong>&nbsp; {{ mensagem.get_assunto_display }}</li>
+                        <li><i class="fas fa-calendar-alt"></i><strong>Enviado em:</strong>&nbsp; {{ mensagem.data_envio|date:"d/m/Y \à\s H:i" }}</li>
+                        <li><i class="fas fa-info-circle"></i><strong>Status:</strong>&nbsp;
+                            {% if mensagem.lida %}
+                                <span class="message-status-badge status-lida">Lida</span>
+                            {% else %}
+                                <span class="message-status-badge status-nao-lida">Não Lida</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                    <hr style="margin: 25px 0;">
+                    <p>{{ mensagem.mensagem|linebreaksbr }}</p>
                 </div>
             </div>
         </div>

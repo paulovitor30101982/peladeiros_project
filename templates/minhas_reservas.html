@@ -9,21 +9,27 @@
         {% csrf_token %}
 
         <h2 class="section-title">Minhas Reservas</h2>
+        <p class="section-subtitle">Acompanhe o histórico de suas reservas. Para cancelar, entre em contato com a administração.</p>
 
         <div class="tabs-container">
             <button class="tab-link active" data-tab="proximas">Próximas</button>
-            <button class="tab-link" data-tab="utilizadas">Utilizadas</button> <button class="tab-link" data-tab="canceladas">Canceladas</button>
+            <button class="tab-link" data-tab="utilizadas">Utilizadas</button>
         </div>
 
         <div class="tab-content active" id="proximas">
-            {% include 'partials/reserva_list.html' with reservas=proximas show_cancel_button=True %}
+            {% if proximas %}
+                {% include 'partials/reserva_list.html' with reservas=proximas %}
+            {% else %}
+                <p class="text-center mt-4">Você não tem nenhuma reserva futura.</p>
+            {% endif %}
         </div>
         
-        <div class="tab-content" id="utilizadas"> {% include 'partials/reserva_list.html' with reservas=utilizadas %}
-        </div>
-        
-        <div class="tab-content" id="canceladas">
-            {% include 'partials/reserva_list.html' with reservas=canceladas %}
+        <div class="tab-content" id="utilizadas">
+             {% if utilizadas %}
+                {% include 'partials/reserva_list.html' with reservas=utilizadas %}
+            {% else %}
+                <p class="text-center mt-4">Você ainda não utilizou nenhuma reserva.</p>
+            {% endif %}
         </div>
     </div>
 </section>

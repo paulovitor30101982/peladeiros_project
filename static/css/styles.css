@@ -1736,3 +1736,271 @@ form#registration-form #id_username {
     padding: 12px 25px;
     font-size: 1.1rem;
 }
+/* ========================================================================= */
+/* ESTILOS PARA A NOVA LISTA DE MENSAGENS DA ÁREA RESTRITA                   */
+/* ========================================================================= */
+
+.admin-messages-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.section-subtitle {
+    text-align: center;
+    max-width: 600px;
+    margin: -40px auto 40px auto;
+    color: var(--gray);
+}
+
+.messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Espaço entre os cards de mensagem */
+}
+
+.message-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto; /* Colunas: Status, Info, Data, Ações */
+    gap: 20px;
+    align-items: center;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    border-left: 5px solid transparent;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.message-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border-left-color: var(--primary);
+}
+
+/* Estilo para mensagens não lidas */
+.message-card.status-nao-lida {
+    background-color: #fcfdff;
+    border-left-color: var(--warning);
+}
+
+.message-card.status-nao-lida:hover {
+    border-left-color: #e9c46a; /* Mantém a cor de aviso no hover */
+}
+
+/* Indicador de status (ponto colorido) */
+.message-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--gray); /* Cinza para lida (sutil) */
+}
+
+.message-card.status-nao-lida .message-status-indicator {
+    background-color: var(--warning); /* Amarelo para não lida */
+}
+
+/* Informações da mensagem (Nome e Assunto) */
+.message-info .message-sender {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0;
+}
+
+.message-card.status-nao-lida .message-info .message-sender {
+    font-weight: 700; /* Mais destaque para não lida */
+}
+
+.message-info .message-subject {
+    font-size: 0.95rem;
+    color: var(--gray);
+    margin: 4px 0 0 0;
+}
+
+/* Data de envio */
+.message-date {
+    font-size: 0.9rem;
+    color: var(--gray);
+    white-space: nowrap; /* Impede que a data quebre linha */
+}
+
+/* Botões de ação */
+.message-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.message-actions .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: var(--light-gray);
+    color: var(--gray);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none; /* Remove sublinhado do link */
+}
+
+.message-actions .btn-icon:hover {
+    background-color: var(--primary);
+    color: white;
+}
+
+.message-actions .btn-icon.delete:hover {
+    background-color: var(--danger);
+    color: white;
+}
+
+.message-actions .btn-icon i {
+    font-size: 1rem;
+}
+
+/* Mensagem de "Nenhuma mensagem" */
+.no-messages {
+    text-align: center;
+    padding: 50px;
+    background: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    font-size: 1.2rem;
+    color: var(--gray);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .message-card {
+        grid-template-columns: auto 1fr auto; /* Status, Info, Ações */
+        grid-template-areas: 
+            "status info actions"
+            "status date actions";
+        row-gap: 5px;
+        column-gap: 15px;
+        padding: 15px;
+    }
+    .message-status-indicator { grid-area: status; }
+    .message-info { grid-area: info; }
+    .message-date { grid-area: date; font-size: 0.85rem; }
+    .message-actions { grid-area: actions; flex-direction: column; }
+}
+/* ========================================================================= */
+/* ESTILOS PARA A PÁGINA DE DETALHES DA MENSAGEM                             */
+/* ========================================================================= */
+
+.message-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* Coluna da esquerda menor, da direita maior */
+    gap: 30px;
+    align-items: flex-start; /* Alinha os cards ao topo */
+}
+
+.detail-card {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.detail-card h3 {
+    font-size: 1.3rem;
+    color: var(--dark);
+    margin-top: 0;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+/* Card de informações do remetente */
+.sender-info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sender-info-list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 0.95rem;
+    color: var(--gray);
+}
+
+.sender-info-list li i {
+    color: var(--primary);
+    width: 25px;
+    text-align: center;
+    margin-right: 10px;
+    font-size: 1.1rem;
+}
+
+.sender-info-list li strong {
+    color: var(--dark);
+    font-weight: 600;
+}
+
+.sender-info-list li a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.sender-info-list li a:hover {
+    text-decoration: underline;
+}
+
+.message-status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+.status-lida {
+    background-color: #e4f5f3; /* Fundo verde claro */
+    color: #1d7a6e; /* Texto verde escuro */
+}
+
+.status-nao-lida {
+    background-color: #fef8e2; /* Fundo amarelo claro */
+    color: #8c7129; /* Texto amarelo escuro */
+}
+
+/* Card da mensagem principal */
+.message-content-card p {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--dark);
+    white-space: pre-wrap; /* Preserva quebras de linha e espaços */
+    background-color: var(--light-gray);
+    padding: 20px;
+    border-radius: 8px;
+}
+
+/* Card de ações */
+.actions-card .btn {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.actions-card .btn-danger {
+    background-color: var(--danger);
+}
+
+.actions-card .btn-danger:hover {
+    background-color: #d1583d;
+    box-shadow: 0 6px 12px rgba(231, 111, 81, 0.25);
+}
+
+/* Responsividade para a página de detalhes */
+@media (max-width: 992px) {
+    .message-detail-grid {
+        grid-template-columns: 1fr; /* Coluna única em telas menores */
+    }
+}

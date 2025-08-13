@@ -1,7 +1,5 @@
 import uuid
 from django.db import models
-# --- AJUSTE IMPORTANTE AQUI ---
-# Importa o modelo Usuario da nova app 'usuarios' através do settings
 from django.conf import settings
 
 class Espaco(models.Model):
@@ -66,18 +64,31 @@ class BloqueioRecorrente(models.Model):
     def __str__(self): return f"Bloqueio Recorrente em {self.espaco.nome} - {self.get_dia_semana_display()} ({self.hora_inicio}-{self.hora_fim})"
 
 class Reserva(models.Model):
-    STATUS_CHOICES = (('confirmada', 'Confirmada'), ('pendente', 'Pendente de Pagamento'), ('cancelada', 'Cancelada'))
+    # --- NOVOS STATUS PARA GERENCIAMENTO DO ADMIN ---
+    STATUS_CHOICES = (
+        ('nao_lida', 'Não Lida'),
+        ('em_tratamento', 'Em Tratamento'),
+        ('tratado', 'Tratado'),
+    )
+    
     codigo_reserva = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, null=True)
     espaco = models.ForeignKey(Espaco, on_delete=models.PROTECT, related_name='reservas')
-    
-    # --- AJUSTE IMPORTANTE AQUI ---
-    # Agora aponta para o AUTH_USER_MODEL definido no settings.py
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='reservas_feitas')
-    
     data_inicio = models.DateTimeField()
     data_fim = models.DateTimeField()
     preco_final = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
+    
+    # --- CAMPO STATUS ATUALIZADO ---
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='nao_lida')
+    
+    # --- NOVO CAMPO DE OBSERVAÇÕES ---
+    observacoes_admin = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Observações do Administrador",
+        help_text="Anotações internas visíveis apenas para a administração."
+    )
+    
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Reservas - Admin{% endblock %}
+
+{% block content %}
+<section class="admin-list" style="padding: 120px 0 80px 0;">
+    <div class="container">
+        <h2 class="section-title">Gerenciamento de Reservas</h2>
+        <p class="section-subtitle">Abaixo estão todas as reservas feitas no site. Clique em uma para ver os detalhes e atualizar o status.</p>
+        
+        <div class="table-responsive">
+            <table class="table table-hover reservations-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Cliente</th>
+                        <th>Espaço Reservado</th>
+                        <th>Data da Reserva</th>
+                        <th>Data do Pedido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in reservas %}
+                    <tr class="reservation-row status-{{ reserva.status }}" data-href="{% url 'reservas:detalhe_reserva_admin' reserva.id %}">
+                        <td>
+                            <span class="badge status-badge-{{ reserva.status }}">{{ reserva.get_status_display }}</span>
+                        </td>
+                        <td>{{ reserva.usuario.get_full_name|default:reserva.usuario.username }}</td>
+                        <td>{{ reserva.espaco.nome }}</td>
+                        <td>{{ reserva.data_inicio|date:"d/m/Y" }}</td>
+                        <td>{{ reserva.data_criacao|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">Nenhuma reserva encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rows = document.querySelectorAll('.reservation-row');
+    rows.forEach(row => {
+        row.addEventListener('click', function () {
+            window.location.href = this.dataset.href;
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,8 +1,5 @@
-# Arquivo: reservas/views.py
-# NENHUMA ALTERAÇÃO NECESSÁRIA. O ARQUIVO ESTÁ CORRETO.
-
 from django.utils.timezone import make_aware
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 import json
 from decimal import Decimal
 from django.db.models import Min, Case, When, Value, DecimalField
@@ -11,15 +8,24 @@ from .models import Espaco, Bloqueio, BloqueioRecorrente, Periodo, Reserva, Feri
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from datetime import datetime, timedelta
+from django.contrib import messages
+from .forms import ReservaAdminForm # Importa o novo formulário
 
 monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho',
     'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ]
 
+# Função auxiliar para checar se o usuário é do time de administração (staff)
+def is_staff_member(user):
+    return user.is_staff
+
+# ----- VIEWS PÚBLICAS E DE USUÁRIOS -----
+
 def reservas(request):
+    # (Nenhuma alteração necessária nesta view)
     espacos = Espaco.objects.filter(disponivel=True).annotate(
         min_preco_hora=Min('regras_preco_hora__preco'),
         min_preco_periodo=Min('regras_preco_periodo__preco')
@@ -32,7 +38,7 @@ def reservas(request):
         )
     )
     agora = timezone.now()
-    reservas_futuras = Reserva.objects.filter(data_fim__gte=agora, status='confirmada').values('espaco_id', 'data_inicio', 'data_fim')
+    reservas_futuras = Reserva.objects.exclude(status='cancelada').filter(data_fim__gte=agora).values('espaco_id', 'data_inicio', 'data_fim')
     bloqueios_futuros = Bloqueio.objects.filter(data_fim__gte=agora).values('espaco_id', 'data_inicio', 'data_fim')
     indisponibilidades = {}
     for item in list(reservas_futuras) + list(bloqueios_futuros):
@@ -75,9 +81,11 @@ def reservas(request):
     }
     return render(request, 'reservas.html', context)
 
+
 @login_required(login_url='/entrar/')
 @csrf_exempt
 def finalizar_reserva(request):
+    # (Alteração principal: status da nova reserva)
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -86,12 +94,8 @@ def finalizar_reserva(request):
             if not cart_items:
                 return JsonResponse({'status': 'error', 'message': 'O carrinho está vazio.'}, status=400)
             
-            # --- CORREÇÃO APLICADA AQUI ---
-            # Unificamos a verificação e a criação em um único laço para garantir consistência.
             for item in cart_items:
                 espaco = Espaco.objects.get(id=item['espacoId'])
-                
-                # 1. Cria a data/hora "ingênua" (sem fuso horário) a partir dos dados do carrinho
                 if espaco.modelo_de_cobranca == 'hora':
                     data_reserva_str = f"{item['year']}-{month_map[item['month']]}-{item['day']} {item['time']}"
                     data_inicio_naive = datetime.strptime(data_reserva_str, '%Y-%m-%d %H:%M')
@@ -104,46 +108,50 @@ def finalizar_reserva(request):
                     data_inicio_naive = datetime.strptime(data_reserva_str_inicio, '%Y-%m-%d %H:%M:%S')
                     data_fim_naive = datetime.strptime(data_reserva_str_fim, '%Y-%m-%d %H:%M:%S')
 
-                # 2. Transforma a data/hora em "consciente" do fuso horário padrão do projeto
                 data_inicio = make_aware(data_inicio_naive)
                 data_fim = make_aware(data_fim_naive)
                 
-                # 3. Usa as datas "conscientes" para verificar conflitos
                 conflitos = Reserva.objects.filter(
                     espaco=espaco,
                     data_inicio__lt=data_fim,
-                    data_fim__gt=data_inicio,
-                    status='confirmada'
-                )
+                    data_fim__gt=data_inicio
+                ).exclude(status='cancelada')
                 if conflitos.exists():
                     return JsonResponse({
                         'status': 'error',
                         'message': f"O horário para {item['item']} no dia {item['day']}/{month_map[item['month']]} já foi reservado. Por favor, atualize a página e tente novamente."
                     }, status=409)
 
-                # 4. Cria a reserva no banco de dados com a data/hora correta (com fuso horário)
+                # --- MUDANÇA AQUI: Nova reserva entra como "Não Lida" ---
                 Reserva.objects.create(
                     espaco=espaco,
                     usuario=request.user,
                     data_inicio=data_inicio,
                     data_fim=data_fim,
                     preco_final=item['price'],
-                    status='confirmada'
+                    status='nao_lida' # Alterado de 'confirmada' para 'nao_lida'
                 )
             
-            return JsonResponse({'status': 'success', 'message': 'Sua reserva foi confirmada com sucesso!'})
+            return JsonResponse({'status': 'success', 'message': 'Sua reserva foi enviada para confirmação!'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'Ocorreu um erro interno: {str(e)}'}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Método não permitido.'}, status=405)
 
+
 @login_required(login_url='/entrar/')
 def minhas_reservas(request):
+    # (View ajustada para continuar funcionando para o usuário final com os novos status)
     agora = timezone.now()
     reservas_usuario = Reserva.objects.filter(usuario=request.user).order_by('-data_inicio')
 
-    proximas = reservas_usuario.filter(status='confirmada', data_fim__gte=agora)
-    utilizadas = reservas_usuario.filter(status='confirmada', data_fim__lt=agora)
-    canceladas = reservas_usuario.filter(status='cancelada')
+    # Para o usuário, "Próximas" são as que ainda não aconteceram.
+    proximas = reservas_usuario.exclude(status='cancelada_pelo_usuario').filter(data_fim__gte=agora)
+    
+    # "Utilizadas" são as que já passaram.
+    utilizadas = reservas_usuario.exclude(status='cancelada_pelo_usuario').filter(data_fim__lt=agora)
+    
+    # Adicionamos um novo status para cancelamento do usuário para não confundir com o sistema do admin
+    canceladas = reservas_usuario.filter(status='cancelada_pelo_usuario')
 
     context = {
         'proximas': proximas,
@@ -152,14 +160,49 @@ def minhas_reservas(request):
     }
     return render(request, 'minhas_reservas.html', context)
 
+
 @login_required(login_url='/entrar/')
 @require_POST
 def cancelar_reserva(request, reserva_id):
+    # (Ajustado para usar um status de cancelamento específico do usuário)
     reserva = get_object_or_404(Reserva, id=reserva_id, usuario=request.user)
-
     try:
-        reserva.status = 'cancelada'
+        # Usamos um status que não faz parte do fluxo do admin para não haver conflito
+        reserva.status = 'cancelada_pelo_usuario'
         reserva.save()
         return JsonResponse({'status': 'success', 'message': 'Reserva cancelada com sucesso!'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+# ----- NOVAS VIEWS PARA O PAINEL DO ADMINISTRADOR -----
+
+@user_passes_test(is_staff_member)
+def gerenciar_reservas(request):
+    """ Lista todas as reservas para o administrador. """
+    reservas_list = Reserva.objects.all().order_by('status', '-data_criacao')
+    context = {
+        'reservas': reservas_list
+    }
+    return render(request, 'gerenciar_reservas.html', context)
+
+
+@user_passes_test(is_staff_member)
+def detalhe_reserva_admin(request, reserva_id):
+    """ Exibe os detalhes de uma reserva e permite ao admin alterar seu status e observações. """
+    reserva = get_object_or_404(Reserva, id=reserva_id)
+    
+    if request.method == 'POST':
+        form = ReservaAdminForm(request.POST, instance=reserva)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'A reserva foi atualizada com sucesso!')
+            return redirect('reservas:detalhe_reserva_admin', reserva_id=reserva.id)
+    else:
+        form = ReservaAdminForm(instance=reserva)
+        
+    context = {
+        'reserva': reserva,
+        'form': form,
+    }
+    return render(request, 'detalhe_reserva_admin.html', context)
