@@ -10,6 +10,7 @@ urlpatterns = [
     path('minhas-reservas/', views.minhas_reservas, name='minhas_reservas'),
     path('cancelar-reserva/<int:reserva_id>/', views.cancelar_reserva, name='cancelar_reserva'),
     
+    
     # --- NOVAS URLs PARA O PAINEL DO ADMINISTRADOR ---
     # Lista todas as reservas para o admin gerenciar
     path('gerenciar/', views.gerenciar_reservas, name='gerenciar_reservas'),

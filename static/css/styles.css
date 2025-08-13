@@ -2004,3 +2004,44 @@ form#registration-form #id_username {
         grid-template-columns: 1fr; /* Coluna única em telas menores */
     }
 }
+/* --- Estilos para a página Minhas Reservas --- */
+.reserva-card-details .cancel-form {
+    margin-top: 20px;
+}
+
+.reserva-card-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    text-align: right;
+}
+
+.reserva-price {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.reserva-status {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: white;
+    background-color: var(--gray);
+}
+
+/* Cores específicas dos status */
+.status-nao_lida .reserva-status,
+.status-em_tratamento .reserva-status {
+    background-color: var(--warning);
+    color: var(--dark);
+}
+.status-tratado .reserva-status {
+    background-color: var(--success);
+}
+.status-cancelada_pelo_usuario .reserva-status {
+    background-color: var(--danger);
+}

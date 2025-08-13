@@ -11,21 +11,17 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required, user_passes_test
 from datetime import datetime, timedelta
 from django.contrib import messages
-from .forms import ReservaAdminForm # Importa o novo formulário
+from .forms import ReservaAdminForm
 
 monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho',
     'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ]
 
-# Função auxiliar para checar se o usuário é do time de administração (staff)
 def is_staff_member(user):
     return user.is_staff
 
-# ----- VIEWS PÚBLICAS E DE USUÁRIOS -----
-
 def reservas(request):
-    # (Nenhuma alteração necessária nesta view)
     espacos = Espaco.objects.filter(disponivel=True).annotate(
         min_preco_hora=Min('regras_preco_hora__preco'),
         min_preco_periodo=Min('regras_preco_periodo__preco')
@@ -38,7 +34,11 @@ def reservas(request):
         )
     )
     agora = timezone.now()
-    reservas_futuras = Reserva.objects.exclude(status='cancelada').filter(data_fim__gte=agora).values('espaco_id', 'data_inicio', 'data_fim')
+    
+    # --- CORREÇÃO 1: Garante que a checagem de indisponibilidade considera todos os status de cancelamento ---
+    status_cancelados = ['cancelada', 'cancelada_pelo_usuario']
+    reservas_futuras = Reserva.objects.exclude(status__in=status_cancelados).filter(data_fim__gte=agora).values('espaco_id', 'data_inicio', 'data_fim')
+    
     bloqueios_futuros = Bloqueio.objects.filter(data_fim__gte=agora).values('espaco_id', 'data_inicio', 'data_fim')
     indisponibilidades = {}
     for item in list(reservas_futuras) + list(bloqueios_futuros):
@@ -85,7 +85,6 @@ def reservas(request):
 @login_required(login_url='/entrar/')
 @csrf_exempt
 def finalizar_reserva(request):
-    # (Alteração principal: status da nova reserva)
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -111,25 +110,27 @@ def finalizar_reserva(request):
                 data_inicio = make_aware(data_inicio_naive)
                 data_fim = make_aware(data_fim_naive)
                 
+                # --- CORREÇÃO 2: Garante que a checagem de conflitos considera todos os status de cancelamento ---
+                status_cancelados = ['cancelada', 'cancelada_pelo_usuario']
                 conflitos = Reserva.objects.filter(
                     espaco=espaco,
                     data_inicio__lt=data_fim,
                     data_fim__gt=data_inicio
-                ).exclude(status='cancelada')
+                ).exclude(status__in=status_cancelados)
+
                 if conflitos.exists():
                     return JsonResponse({
                         'status': 'error',
                         'message': f"O horário para {item['item']} no dia {item['day']}/{month_map[item['month']]} já foi reservado. Por favor, atualize a página e tente novamente."
                     }, status=409)
 
-                # --- MUDANÇA AQUI: Nova reserva entra como "Não Lida" ---
                 Reserva.objects.create(
                     espaco=espaco,
                     usuario=request.user,
                     data_inicio=data_inicio,
                     data_fim=data_fim,
                     preco_final=item['price'],
-                    status='nao_lida' # Alterado de 'confirmada' para 'nao_lida'
+                    status='nao_lida'
                 )
             
             return JsonResponse({'status': 'success', 'message': 'Sua reserva foi enviada para confirmação!'})
@@ -140,18 +141,19 @@ def finalizar_reserva(request):
 
 @login_required(login_url='/entrar/')
 def minhas_reservas(request):
-    # (View ajustada para continuar funcionando para o usuário final com os novos status)
+    """
+    Busca as reservas do usuário logado e as separa em abas:
+    Próximas, Utilizadas e Canceladas.
+    """
     agora = timezone.now()
     reservas_usuario = Reserva.objects.filter(usuario=request.user).order_by('-data_inicio')
 
-    # Para o usuário, "Próximas" são as que ainda não aconteceram.
-    proximas = reservas_usuario.exclude(status='cancelada_pelo_usuario').filter(data_fim__gte=agora)
-    
-    # "Utilizadas" são as que já passaram.
-    utilizadas = reservas_usuario.exclude(status='cancelada_pelo_usuario').filter(data_fim__lt=agora)
-    
-    # Adicionamos um novo status para cancelamento do usuário para não confundir com o sistema do admin
-    canceladas = reservas_usuario.filter(status='cancelada_pelo_usuario')
+    # --- CORREÇÃO 3: Lógica principal ajustada para lidar com múltiplos status de cancelamento ---
+    status_cancelados = ['cancelada_pelo_usuario', 'cancelada']
+
+    proximas = reservas_usuario.exclude(status__in=status_cancelados).filter(data_fim__gte=agora)
+    utilizadas = reservas_usuario.exclude(status__in=status_cancelados).filter(data_fim__lt=agora)
+    canceladas = reservas_usuario.filter(status__in=status_cancelados)
 
     context = {
         'proximas': proximas,
@@ -164,22 +166,21 @@ def minhas_reservas(request):
 @login_required(login_url='/entrar/')
 @require_POST
 def cancelar_reserva(request, reserva_id):
-    # (Ajustado para usar um status de cancelamento específico do usuário)
     reserva = get_object_or_404(Reserva, id=reserva_id, usuario=request.user)
-    try:
-        # Usamos um status que não faz parte do fluxo do admin para não haver conflito
+    agora = timezone.now()
+    if reserva.data_inicio > agora:
         reserva.status = 'cancelada_pelo_usuario'
         reserva.save()
-        return JsonResponse({'status': 'success', 'message': 'Reserva cancelada com sucesso!'})
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        messages.success(request, 'Sua reserva foi cancelada com sucesso.')
+    else:
+        messages.error(request, 'Não é possível cancelar uma reserva que já ocorreu.')
+    return redirect('reservas:minhas_reservas')
 
 
-# ----- NOVAS VIEWS PARA O PAINEL DO ADMINISTRADOR -----
+# ----- VIEWS PARA O PAINEL DO ADMINISTRADOR -----
 
 @user_passes_test(is_staff_member)
 def gerenciar_reservas(request):
-    """ Lista todas as reservas para o administrador. """
     reservas_list = Reserva.objects.all().order_by('status', '-data_criacao')
     context = {
         'reservas': reservas_list
@@ -189,9 +190,7 @@ def gerenciar_reservas(request):
 
 @user_passes_test(is_staff_member)
 def detalhe_reserva_admin(request, reserva_id):
-    """ Exibe os detalhes de uma reserva e permite ao admin alterar seu status e observações. """
     reserva = get_object_or_404(Reserva, id=reserva_id)
-    
     if request.method == 'POST':
         form = ReservaAdminForm(request.POST, instance=reserva)
         if form.is_valid():
@@ -200,7 +199,6 @@ def detalhe_reserva_admin(request, reserva_id):
             return redirect('reservas:detalhe_reserva_admin', reserva_id=reserva.id)
     else:
         form = ReservaAdminForm(instance=reserva)
-        
     context = {
         'reserva': reserva,
         'form': form,

@@ -6,31 +6,56 @@
 {% block content %}
 <section class="user-reservations" style="padding-top: 120px; padding-bottom: 80px;">
     <div class="container">
-        {% csrf_token %}
-
         <h2 class="section-title">Minhas Reservas</h2>
-        <p class="section-subtitle">Acompanhe o histórico de suas reservas. Para cancelar, entre em contato com a administração.</p>
+        <p class="section-subtitle">Acompanhe o histórico de suas reservas.</p>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} text-center">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
 
         <div class="tabs-container">
             <button class="tab-link active" data-tab="proximas">Próximas</button>
             <button class="tab-link" data-tab="utilizadas">Utilizadas</button>
+            <button class="tab-link" data-tab="canceladas">Canceladas</button>
         </div>
 
         <div class="tab-content active" id="proximas">
-            {% if proximas %}
-                {% include 'partials/reserva_list.html' with reservas=proximas %}
-            {% else %}
-                <p class="text-center mt-4">Você não tem nenhuma reserva futura.</p>
-            {% endif %}
+            {% include 'partials/reserva_list.html' with reservas=proximas show_cancel_button=True %}
         </div>
         
         <div class="tab-content" id="utilizadas">
-             {% if utilizadas %}
-                {% include 'partials/reserva_list.html' with reservas=utilizadas %}
-            {% else %}
-                <p class="text-center mt-4">Você ainda não utilizou nenhuma reserva.</p>
-            {% endif %}
+            {% include 'partials/reserva_list.html' with reservas=utilizadas %}
+        </div>
+        
+        <div class="tab-content" id="canceladas">
+            {% include 'partials/reserva_list.html' with reservas=canceladas %}
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Script para controlar a troca de abas
+document.addEventListener('DOMContentLoaded', function() {
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            const tab = link.dataset.tab;
+
+            // Remove a classe 'active' de todos
+            tabLinks.forEach(l => l.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+
+            // Adiciona a classe 'active' ao link e conteúdo clicado
+            link.classList.add('active');
+            document.getElementById(tab).classList.add('active');
+        });
+    });
+});
+</script>
 {% endblock %}
