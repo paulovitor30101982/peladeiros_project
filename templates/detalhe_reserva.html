@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalhe da Reserva #{{ reserva.id }}{% endblock %}
+
+{% block content %}
+<section class="detail-page" style="padding: 120px 0 80px 0;">
+    <div class="container">
+        <h2 class="section-title">Detalhes da Reserva #{{ reserva.id }}</h2>
+        <a href="{% url 'reservas:minhas_reservas' %}" class="btn btn-sm btn-outline mb-4">&larr; Voltar para a lista</a>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="detail-grid">
+            <div class="detail-card info-card">
+                <h3>Informações do Cliente e Reserva</h3>
+                <p><strong>Cliente:</strong> {{ reserva.usuario.get_full_name }}</p>
+                <p><strong>Email:</strong> {{ reserva.usuario.email }}</p>
+                <hr>
+                <p><strong>Data da Reserva:</strong> {{ reserva.data_reserva|date:"d/m/Y" }}</p>
+                <p><strong>Horário:</strong> de {{ reserva.horario_inicio|time:"H:i" }} às {{ reserva.horario_fim|time:"H:i" }}</p>
+                <p><strong>Valor Pago:</strong> R$ {{ reserva.valor_total }}</p>
+                <p><strong>Data do Pedido:</strong> {{ reserva.data_criacao|date:"d/m/Y H:i" }}</p>
+            </div>
+
+            <div class="detail-card action-card">
+                <h3>Gerenciar Reserva</h3>
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+                    <div class="form-group mb-3">
+                        {{ form.status.label_tag }}
+                        {{ form.status }}
+                    </div>
+                    <div class="form-group mb-4">
+                        {{ form.observacoes.label_tag }}
+                        {{ form.observacoes }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Salvar Alterações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
